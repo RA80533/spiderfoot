@@ -36,7 +36,7 @@ class SpiderFootScanner():
         status (str): status of the scan
     """
 
-    __scanId = None
+    __scanId: str
     __status = None
     __config = None
     __sf: SpiderFoot
