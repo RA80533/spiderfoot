@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from contextlib import suppress
 import io
 import logging
@@ -102,7 +104,7 @@ class SpiderFootPlugin():
     # Will be set to True by the controller if the user aborts scanning
     _stopScanning = False
     # Modules that will be notified when this module produces events
-    _listenerModules = list()
+    _listenerModules: list[SpiderFootPlugin] = list()
     # Current event being processed
     _currentEvent = None
     # Target currently being acted against
@@ -283,12 +285,12 @@ class SpiderFootPlugin():
 
         return self._currentTarget
 
-    def registerListener(self, listener) -> None:
+    def registerListener(self, listener: SpiderFootPlugin) -> None:
         """Listener modules which will get notified once we have data for them to
         work with.
 
         Args:
-            listener: TBD
+            listener: SpiderFootPlugin
         """
 
         self._listenerModules.append(listener)
