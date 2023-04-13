@@ -43,7 +43,7 @@ class SpiderFootScanner():
     __dbh = None
     __targetValue = None
     __targetType = None
-    __moduleList = list()
+    __moduleList: list[str]
     __target = None
     __moduleInstances = dict()
     __modconfig = dict()
