@@ -1544,7 +1544,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def vacuum(self):
+    def vacuum(self) -> bytes:
         dbh = SpiderFootDb(self.config)
         try:
             if dbh.vacuumDB():

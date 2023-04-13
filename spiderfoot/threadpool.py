@@ -62,7 +62,7 @@ class SpiderFootThreadPool:
         return self._stop
 
     @stop.setter
-    def stop(self, val: bool):
+    def stop(self, val: bool) -> bool:
         assert val in (True, False), "stop must be either True or False"
         for t in self.pool:
             with suppress(Exception):
@@ -205,7 +205,7 @@ class SpiderFootThreadPool:
             self.submit(callback, i, *args, **kwargs)
 
     @property
-    def finished(self):
+    def finished(self) -> bool:
         if self.stop:
             return True
 
@@ -218,10 +218,10 @@ class SpiderFootThreadPool:
         inputQueuesEmpty = [q.empty() for q in self.inputQueues.values()]
         return not inputThreadAlive and all(inputQueuesEmpty) and all(finishedThreads)
 
-    def __enter__(self):
+    def __enter__(self) -> SpiderFootThreadPool:
         return self
 
-    def __exit__(self, exception_type, exception_value, traceback):
+    def __exit__(self, exception_type, exception_value, traceback) -> bool | None:
         self.shutdown()
 
 

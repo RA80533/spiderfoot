@@ -50,7 +50,7 @@ class SpiderFootSqliteLogHandler(logging.Handler):
             if len(self.batch) >= self.batch_size:
                 self.logBatch()
 
-    def logBatch(self):
+    def logBatch(self) -> None:
         batch = self.batch
         self.batch = []
         if self.dbh is None:

@@ -82,6 +82,8 @@ class SpiderFootPluginLogger(logging.Logger):
 # end of logging overrides
 
 
+from logging import Logger
+from logging import RootLogger
 class SpiderFootPlugin():
     """SpiderFootPlugin module object
 
@@ -148,7 +150,7 @@ class SpiderFootPlugin():
         self.sharedThreadPool = None
 
     @property
-    def log(self):
+    def log(self) -> RootLogger | None | Logger:
         if self._log is None:
             logging.setLoggerClass(SpiderFootPluginLogger)  # temporarily set logger class
             self._log = logging.getLogger(f"spiderfoot.{self.__name__}")  # init SpiderFootPluginLogger
@@ -317,7 +319,7 @@ class SpiderFootPlugin():
     async def _notify_listener(self, listener: SpiderFootPlugin, event: SpiderFootEvent):
         ...
 
-    async def async_notify_listeners(self, event: SpiderFootEvent):
+    async def async_notify_listeners(self, event: SpiderFootEvent) -> None:
         eventName = event.eventType
         eventData = event.data
 
@@ -607,7 +609,7 @@ class SpiderFootPlugin():
         self.thread = threading.Thread(target=self.threadWorker)
         self.thread.start()
 
-    def finish(self):
+    def finish(self) -> None:
         """Perform final/cleanup functions before module exits
         Note that this function may be called multiple times
         Overridden by the implementer
@@ -672,7 +674,7 @@ class SpiderFootPlugin():
         else:
             self.sharedThreadPool.submit(callback, *args, taskName=f"{self.__name__}_threadWorker", maxThreads=self.maxThreads, **kwargs)
 
-    def threadPool(self, *args, **kwargs):
+    def threadPool(self, *args, **kwargs) -> SpiderFootThreadPool:
         return SpiderFootThreadPool(*args, **kwargs)
 
     def setSharedThreadPool(self, sharedThreadPool) -> None:

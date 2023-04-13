@@ -108,7 +108,7 @@ class SpiderFoot:
         return self._socksProxy
 
     @dbh.setter
-    def dbh(self, dbh):
+    def dbh(self, dbh) -> None:
         """Called usually some time after instantiation
         to set up a database handle and scan ID, used
         for logging events to the database about a scan.
@@ -304,7 +304,7 @@ class SpiderFoot:
 
         return None
 
-    def configSerialize(self, opts: dict, filterSystem: bool = True):
+    def configSerialize(self, opts: dict, filterSystem: bool = True) -> dict:
         """Convert a Python dictionary to something storable in the database.
 
         Args:

@@ -23,7 +23,7 @@ from sflib import SpiderFoot
 from spiderfoot import SpiderFootDb, SpiderFootEvent, SpiderFootPlugin, SpiderFootTarget, SpiderFootHelpers, SpiderFootThreadPool, SpiderFootCorrelator, logger
 
 
-def startSpiderFootScanner(loggingQueue, *args, **kwargs):
+def startSpiderFootScanner(loggingQueue, *args, **kwargs) -> SpiderFootScanner:
     logger.logWorkerSetup(loggingQueue)
     return SpiderFootScanner(*args, **kwargs)
 
