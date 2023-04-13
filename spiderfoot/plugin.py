@@ -312,6 +312,77 @@ class SpiderFootPlugin():
         """
         return dict()
 
+    async def async_notify_listeners(self, event: SpiderFootEvent) -> None:
+        eventName = event.eventType
+        eventData = event.data
+
+        # Be strict about what events to pass on, unless they are
+        # the ROOT event or the event type of the target.
+        if self.__outputFilter__ and eventName not in ['ROOT', self.getTarget().targetType, self.__outputFilter__]:
+            return
+
+        storeOnly = False  # Under some conditions, only store and don't notify
+
+        if not eventData:
+            return
+
+        if self.checkForStop():
+            return
+
+        # Look back to ensure the original notification for an element
+        # is what's linked to children. For instance, sfp_dns may find
+        # xyz.abc.com, and then sfp_ripe obtains some raw data for the
+        # same, and then sfp_dns finds xyz.abc.com in there, we should
+        # suppress the notification of that to other modules, as the
+        # original xyz.abc.com notification from sfp_dns will trigger
+        # those modules anyway. This also avoids messy iterations that
+        # traverse many many levels.
+
+        # storeOnly is used in this case so that the source to dest
+        # relationship is made, but no further events are triggered
+        # from dest, as we are already operating on dest's original
+        # notification from one of the upstream events.
+
+        prevEvent = event.sourceEvent
+        while prevEvent is not None:
+            if prevEvent.sourceEvent is not None and prevEvent.sourceEvent.eventType == event.eventType and prevEvent.sourceEvent.data.lower() == eventData.lower():
+                storeOnly = True
+                break
+            prevEvent = prevEvent.sourceEvent
+
+        # output to queue if applicable
+        if self.outgoingEventQueue is not None:
+            self.outgoingEventQueue.put(event)
+        # otherwise, call other modules directly
+        else:
+            self._listenerModules.sort(key=lambda m: m._priority)
+
+            for listener in self._listenerModules:
+                if eventName not in listener.watchedEvents() and '*' not in listener.watchedEvents():
+                    continue
+
+                if storeOnly and "__stor" not in listener.__module__:
+                    continue
+
+                listener._currentEvent = event
+
+                # Check if we've been asked to stop in the meantime, so that
+                # notifications stop triggering module activity.
+                if self.checkForStop():
+                    return
+
+                try:
+                    listener.handleEvent(event)
+                except Exception as e:
+                    self.sf.error(f"Module ({listener.__module__}) encountered an error: {e}")
+                    # set errorState
+                    self.errorState = True
+                    # clear incoming queue
+                    if self.incomingEventQueue:
+                        with suppress(queue.Empty):
+                            while 1:
+                                self.incomingEventQueue.get_nowait()
+
     def notifyListeners(self, sfEvent: SpiderFootEvent) -> None:
         """Call the handleEvent() method of every other plug-in listening for
         events from this plug-in. Remember that those plug-ins will be called
