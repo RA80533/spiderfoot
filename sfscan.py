@@ -44,7 +44,7 @@ class SpiderFootScanner():
     __targetValue = None
     __targetType = None
     __moduleList: list[str]
-    __target = None
+    __target: SpiderFootTarget
     __moduleInstances = dict()
     __modconfig = dict()
     __scanName = None
