@@ -9,6 +9,8 @@
 # Copyright:    (c) Steve Micallef 2013
 # License:      MIT
 # -----------------------------------------------------------------
+from __future__ import annotations
+
 import socket
 import time
 import queue

@@ -11,6 +11,8 @@
 # Licence:     MIT
 # -------------------------------------------------------------------------------
 
+from __future__ import annotations
+
 import argparse
 import cmd
 import codecs

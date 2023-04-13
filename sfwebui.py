@@ -9,6 +9,8 @@
 # Copyright:    (c) Steve Micallef 2012
 # License:      MIT
 # -----------------------------------------------------------------
+from __future__ import annotations
+
 import csv
 import html
 import json
