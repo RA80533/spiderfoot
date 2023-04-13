@@ -1,3 +1,4 @@
+from . import helpers as SpiderFootHelpers
 from .db import SpiderFootDb
 from .event import SpiderFootEvent
 from .threadpool import SpiderFootThreadPool
