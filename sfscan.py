@@ -49,7 +49,7 @@ class SpiderFootScanner():
     __modconfig = dict()
     __scanName = None
 
-    def __init__(self, scanName: str, scanId: str, targetValue: str, targetType: str, moduleList: list, globalOpts: dict, start: bool = True) -> None:
+    def __init__(self, scanName: str, scanId: str, targetValue: str, targetType: str, moduleList: list[str], globalOpts: dict, start: bool = True) -> None:
         """Initialize SpiderFootScanner object.
 
         Args:
