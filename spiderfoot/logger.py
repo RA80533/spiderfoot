@@ -6,6 +6,8 @@ from contextlib import suppress
 from logging.handlers import QueueHandler, QueueListener
 
 from spiderfoot import SpiderFootDb, SpiderFootHelpers
+from multiprocessing.queues import Queue
+from typing import Optional
 
 
 class SpiderFootSqliteLogHandler(logging.Handler):
@@ -65,7 +67,7 @@ class SpiderFootSqliteLogHandler(logging.Handler):
         self.dbh = SpiderFootDb(self.opts)
 
 
-def logListenerSetup(loggingQueue, opts: dict = None) -> 'logging.handlers.QueueListener':
+def logListenerSetup(loggingQueue: Queue, opts: dict = None) -> 'logging.handlers.QueueListener':
     """Create and start a SpiderFoot log listener in its own thread.
 
     This function should be called as soon as possible in the main
@@ -133,7 +135,7 @@ def logListenerSetup(loggingQueue, opts: dict = None) -> 'logging.handlers.Queue
     return spiderFootLogListener
 
 
-def logWorkerSetup(loggingQueue) -> 'logging.Logger':
+def logWorkerSetup(loggingQueue: Queue) -> 'logging.Logger':
     """Root SpiderFoot logger.
 
     Args:
