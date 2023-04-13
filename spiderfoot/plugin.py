@@ -131,7 +131,7 @@ class SpiderFootPlugin():
     # Queue for produced events
     outgoingEventQueue = None
     # SpiderFoot object, set in each module's setup() function
-    sf = None
+    sf: SpiderFoot | None = None
     # Configuration, set in each module's setup() function
     opts = dict()
     # Maximum threads
