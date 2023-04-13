@@ -378,9 +378,17 @@ class SpiderFootPlugin():
             notify = functools.partial(self._notify_listener, event=event)
             notifications = map(notify, listeners_to_notify)
             
-            return await asyncio.gather(
-                *notifications,
-            )
+            group = asyncio.gather(*notifications, return_exceptions=True)
+            
+            try:
+                await group
+            except Exception as e:
+                print(f"A task failed with: {e}, canceling all tasks")
+                group.cancel()
+            
+            # return await asyncio.gather(
+            #     *notifications,
+            # )
             
             # return asyncio.gather(
             #     *map(notify, listeners_to_notify),
