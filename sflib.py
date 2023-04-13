@@ -36,6 +36,7 @@ import requests
 import urllib3
 from publicsuffixlist import PublicSuffixList
 from spiderfoot import SpiderFootHelpers
+from typing import Any, Dict
 
 # For hiding the SSL warnings coming from the requests lib
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # noqa: DUO131
@@ -367,7 +368,7 @@ class SpiderFoot:
 
         return storeopts
 
-    def configUnserialize(self, opts: dict, referencePoint: dict, filterSystem: bool = True):
+    def configUnserialize(self, opts: dict, referencePoint: dict, filterSystem: bool = True) -> Dict[str, Any]:
         """Take strings, etc. from the database or UI and convert them
         to a dictionary for Python to process.
 
