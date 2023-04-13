@@ -8,6 +8,9 @@ import threading
 from time import sleep
 import traceback
 
+from sflib import SpiderFoot
+
+from .db import SpiderFootDb
 from .event import SpiderFootEvent
 from .target import SpiderFootTarget
 from .threadpool import SpiderFootThreadPool
@@ -166,7 +169,7 @@ class SpiderFootPlugin():
         self._listenerModules = list()
         self._stopScanning = False
 
-    def setup(self, sf, userOpts: dict = {}) -> None:
+    def setup(self, sf: SpiderFoot, userOpts: dict = {}) -> None:
         """Will always be overriden by the implementer.
 
         Args:
@@ -229,7 +232,7 @@ class SpiderFootPlugin():
 
         self._currentTarget = target
 
-    def setDbh(self, dbh) -> None:
+    def setDbh(self, dbh: SpiderFootDb) -> None:
         """Used to set the database handle, which is only to be used
         by modules in very rare/exceptional cases (e.g. sfp__stor_db)
 
@@ -433,7 +436,7 @@ class SpiderFootPlugin():
         """
         return self.sharedThreadPool.countQueuedTasks(f"{self.__name__}_threadWorker") > 0
 
-    def watchedEvents(self) -> list:
+    def watchedEvents(self) -> list[str]:
         """What events is this module interested in for input. The format is a list
         of event types that are applied to event types that this module wants to
         be notified of, or * if it wants everything.
@@ -446,7 +449,7 @@ class SpiderFootPlugin():
 
         return ['*']
 
-    def producedEvents(self) -> list:
+    def producedEvents(self) -> list[str]:
         """What events this module produces
         This is to support the end user in selecting modules based on events
         produced.
@@ -496,7 +499,6 @@ class SpiderFootPlugin():
     def threadWorker(self) -> None:
         try:
             # create new database handle since we're in our own thread
-            from spiderfoot import SpiderFootDb
             self.setDbh(SpiderFootDb(self.opts))
             self.sf._dbh = self.__sfdb__
 
