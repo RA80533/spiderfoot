@@ -39,7 +39,7 @@ class SpiderFootScanner():
     __scanId = None
     __status = None
     __config = None
-    __sf = None
+    __sf: SpiderFoot
     __dbh = None
     __targetValue = None
     __targetType = None
