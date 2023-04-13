@@ -173,7 +173,7 @@ class SpiderFootPlugin():
         """
         pass
 
-    def debug(self, *args, **kwargs) -> None:
+    def debug(self, *args: object, **kwargs: ...) -> None:
         """For logging.
         A wrapper around logging.debug() that adds the scanId to LogRecord
 
@@ -183,7 +183,7 @@ class SpiderFootPlugin():
         """
         self.log.debug(*args, extra={'scanId': self.__scanId__}, **kwargs)
 
-    def info(self, *args, **kwargs) -> None:
+    def info(self, *args: object, **kwargs: ...) -> None:
         """For logging.
         A wrapper around logging.info() that adds the scanId to LogRecord
 
@@ -193,7 +193,7 @@ class SpiderFootPlugin():
         """
         self.log.info(*args, extra={'scanId': self.__scanId__}, **kwargs)
 
-    def error(self, *args, **kwargs) -> None:
+    def error(self, *args: object, **kwargs: ...) -> None:
         """For logging.
         A wrapper around logging.error() that adds the scanId to LogRecord
 
