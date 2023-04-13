@@ -226,7 +226,7 @@ class SpiderFootScanner():
     def status(self) -> str:
         return self.__status
 
-    def __setStatus(self, status: str, started: float = None, ended: float = None) -> None:
+    def __setStatus(self, status: str, started: float | None = None, ended: float | None = None) -> None:
         """Set the status of the currently running scan (if any).
 
         Args:
