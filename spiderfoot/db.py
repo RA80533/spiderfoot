@@ -673,7 +673,7 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("Unable to create scan instance in database") from e
 
-    def scanInstanceSet(self, instanceId: str, started: str = None, ended: str = None, status: str = None) -> None:
+    def scanInstanceSet(self, instanceId: str, started: str | None = None, ended: str | None = None, status: str | None = None) -> None:
         """Update the start time, end time or status (or all 3) of a scan instance.
 
         Args:
