@@ -12,8 +12,6 @@ import threading
 from time import sleep
 import traceback
 
-from sflib import SpiderFoot
-
 from .db import SpiderFootDb
 from .event import SpiderFootEvent
 from .target import SpiderFootTarget
@@ -135,7 +133,7 @@ class SpiderFootPlugin():
     # Queue for produced events
     outgoingEventQueue = None
     # SpiderFoot object, set in each module's setup() function
-    sf: SpiderFoot | None = None
+    sf: ... = None
     # Configuration, set in each module's setup() function
     opts = dict()
     # Maximum threads
@@ -173,7 +171,7 @@ class SpiderFootPlugin():
         self._listenerModules = list()
         self._stopScanning = False
 
-    def setup(self, sf: SpiderFoot, userOpts: dict = {}) -> None:
+    def setup(self, sf: ..., userOpts: dict = {}) -> None:
         """Will always be overriden by the implementer.
 
         Args:
