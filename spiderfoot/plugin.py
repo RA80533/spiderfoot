@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from contextlib import suppress
+import asyncio
+import functools
 import io
 import logging
 import os
@@ -314,7 +316,10 @@ class SpiderFootPlugin():
         """
         return dict()
 
-    async def async_notify_listeners(self, event: SpiderFootEvent) -> None:
+    async def _notify_listener(self, listener: SpiderFootPlugin, event: SpiderFootEvent):
+        ...
+
+    async def async_notify_listeners(self, event: SpiderFootEvent):
         eventName = event.eventType
         eventData = event.data
 
@@ -358,32 +363,67 @@ class SpiderFootPlugin():
         # otherwise, call other modules directly
         else:
             self._listenerModules.sort(key=lambda m: m._priority)
+            
+            listeners_to_notify = filter(
+                lambda m: any(_key in m.watchedEvents() for _key in {eventName, '*'}),
+                self._listenerModules,
+            )
+            
+            if storeOnly:
+                listeners_to_notify = filter(
+                    lambda m: "__stor" in m.__module__,
+                    listeners_to_notify,
+                )
 
-            for listener in self._listenerModules:
-                if eventName not in listener.watchedEvents() and '*' not in listener.watchedEvents():
-                    continue
+            notify = functools.partial(self._notify_listener, event=event)
+            notifications = map(notify, listeners_to_notify)
+            
+            return await asyncio.gather(
+                *notifications,
+            )
+            
+            # return asyncio.gather(
+            #     *map(notify, listeners_to_notify),
+            # )
 
-                if storeOnly and "__stor" not in listener.__module__:
-                    continue
+            # return asyncio.gather(*[self._notify_listener(listener, event) for listener in listeners_to_notify])
 
-                listener._currentEvent = event
+            # match_set = {eventName, '*'}
 
-                # Check if we've been asked to stop in the meantime, so that
-                # notifications stop triggering module activity.
-                if self.checkForStop():
-                    return
+            # interested_listeners = filter(
+            #     lambda m: any(_key in m.watchedEvents() for _key in match_set),
+            #     # lambda m: any(_key in m.watchedEvents() for _key in {eventName, '*'}),
+            #     # lambda m: any(_event in match_set for _event in m.watchedEvents()),
+            #     # lambda m: not match_set.isdisjoint(m.watchedEvents()),
+            #     # lambda m: {eventName, '*'} & set(m.watchedEvents()),
+            #     self._listenerModules,
+            # )
 
-                try:
-                    listener.handleEvent(event)
-                except Exception as e:
-                    self.sf.error(f"Module ({listener.__module__}) encountered an error: {e}")
-                    # set errorState
-                    self.errorState = True
-                    # clear incoming queue
-                    if self.incomingEventQueue:
-                        with suppress(queue.Empty):
-                            while 1:
-                                self.incomingEventQueue.get_nowait()
+            # for listener in self._listenerModules:
+            #     if eventName not in listener.watchedEvents() and '*' not in listener.watchedEvents():
+            #         continue
+
+            #     if storeOnly and "__stor" not in listener.__module__:
+            #         continue
+
+            #     listener._currentEvent = event
+
+            #     # Check if we've been asked to stop in the meantime, so that
+            #     # notifications stop triggering module activity.
+            #     if self.checkForStop():
+            #         return
+
+            #     try:
+            #         listener.handleEvent(event)
+            #     except Exception as e:
+            #         self.sf.error(f"Module ({listener.__module__}) encountered an error: {e}")
+            #         # set errorState
+            #         self.errorState = True
+            #         # clear incoming queue
+            #         if self.incomingEventQueue:
+            #             with suppress(queue.Empty):
+            #                 while 1:
+            #                     self.incomingEventQueue.get_nowait()
 
     def notifyListeners(self, sfEvent: SpiderFootEvent) -> None:
         """Call the handleEvent() method of every other plug-in listening for
