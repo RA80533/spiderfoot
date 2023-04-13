@@ -40,7 +40,7 @@ class SpiderFootScanner():
     __status = None
     __config = None
     __sf: SpiderFoot
-    __dbh = None
+    __dbh: SpiderFootDb
     __targetValue = None
     __targetType = None
     __moduleList: list[str]
