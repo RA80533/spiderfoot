@@ -62,7 +62,6 @@ class sfp_dnsresolve(SpiderFootPlugin):
             self.opts[opt] = userOpts[opt]
 
     def enrichTarget(self, target):
-        ret = list()
         # If it's an IP, get the hostname it reverse resolves to
         self.info("Identifying aliases for specified target(s)")
         ret = self.resolveTargets(target, self.opts['validatereverse'])

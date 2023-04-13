@@ -92,7 +92,6 @@ def main() -> None:
     }
 
     # Legacy way to run the server
-    args = None
     p = argparse.ArgumentParser(description=f"SpiderFoot {__version__}: Open Source Intelligence Automation.")
     p.add_argument("-d", "--debug", action='store_true', help="Enable debug output.")
     p.add_argument("-l", metavar="IP:port", help="IP and port to listen on.")

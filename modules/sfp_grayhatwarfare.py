@@ -141,7 +141,6 @@ class sfp_grayhatwarfare(SpiderFootPlugin):
             self.errorState = True
             return
 
-        currentIndex = 0
         currentPage = 0
         maxPages = self.opts['max_pages']
         perPage = self.opts['per_page']

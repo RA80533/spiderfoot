@@ -322,7 +322,7 @@ class sfp_accounts(SpiderFootPlugin):
                     self.sites = [d for d in self.sites if d['name'] not in delsites]
             else:
                 randpool = 'abcdefghijklmnopqrstuvwxyz1234567890'
-                randuser = ''.join([random.SystemRandom().choice(randpool) for x in range(10)])
+                randuser = ''.join([random.SystemRandom().choice(randpool) for _ in range(10)])
                 res = self.checkSites(randuser)
                 if res:
                     delsites = list()
