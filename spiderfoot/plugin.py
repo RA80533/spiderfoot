@@ -8,6 +8,8 @@ import threading
 from time import sleep
 import traceback
 
+from .event import SpiderFootEvent
+from .target import SpiderFootTarget
 from .threadpool import SpiderFootThreadPool
 
 # begin logging overrides
@@ -213,7 +215,7 @@ class SpiderFootPlugin():
         """
         pass
 
-    def setTarget(self, target) -> None:
+    def setTarget(self, target: SpiderFootTarget) -> None:
         """Assigns the current target this module is acting against.
 
         Args:
@@ -222,8 +224,6 @@ class SpiderFootPlugin():
         Raises:
             TypeError: target argument was invalid type
         """
-        from spiderfoot import SpiderFootTarget
-
         if not isinstance(target, SpiderFootTarget):
             raise TypeError(f"target is {type(target)}; expected SpiderFootTarget")
 
@@ -309,7 +309,7 @@ class SpiderFootPlugin():
         """
         return dict()
 
-    def notifyListeners(self, sfEvent) -> None:
+    def notifyListeners(self, sfEvent: SpiderFootEvent) -> None:
         """Call the handleEvent() method of every other plug-in listening for
         events from this plug-in. Remember that those plug-ins will be called
         within the same execution context of this thread, not on their own.
@@ -320,8 +320,6 @@ class SpiderFootPlugin():
         Raises:
             TypeError: sfEvent argument was invalid type
         """
-
-        from spiderfoot import SpiderFootEvent
 
         if not isinstance(sfEvent, SpiderFootEvent):
             raise TypeError(f"sfEvent is {type(sfEvent)}; expected SpiderFootEvent")
@@ -459,7 +457,7 @@ class SpiderFootPlugin():
 
         return []
 
-    def handleEvent(self, sfEvent) -> None:
+    def handleEvent(self, sfEvent: SpiderFootEvent) -> None:
         """Handle events to this module.
         Will usually be overriden by the implementer, unless it doesn't handle any events.
 
