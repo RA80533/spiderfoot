@@ -37,7 +37,7 @@ class SpiderFootEvent():
     _actualSource = None
     __id = None
 
-    def __init__(self, eventType: str, data: str, module: str, sourceEvent: 'SpiderFootEvent') -> None:
+    def __init__(self, eventType: str, data: str, module: str, sourceEvent: 'SpiderFootEvent | None') -> None:
         """Initialize SpiderFoot event object.
 
         Args:
@@ -253,7 +253,7 @@ class SpiderFootEvent():
         self._data = data
 
     @sourceEvent.setter
-    def sourceEvent(self, sourceEvent: 'SpiderFootEvent') -> None:
+    def sourceEvent(self, sourceEvent: 'SpiderFootEvent | None') -> None:
         """Source event which lead to this event.
 
         Args:
@@ -269,11 +269,15 @@ class SpiderFootEvent():
             self._sourceEventHash = "ROOT"
             return
 
-        if not isinstance(sourceEvent, SpiderFootEvent):
-            raise TypeError(f"sourceEvent is {type(sourceEvent)}; expected SpiderFootEvent()")
+        # if not isinstance(sourceEvent, SpiderFootEvent):
+        #     raise TypeError(f"sourceEvent is {type(sourceEvent)}; expected SpiderFootEvent()")
 
         self._sourceEvent = sourceEvent
-        self._sourceEventHash = self.sourceEvent.hash
+        
+        if sourceEvent is not None:
+            self._sourceEventHash = self.sourceEvent.hash
+        else:
+            self._sourceEventHash = "ROOT"
 
     @actualSource.setter
     def actualSource(self, actualSource: str) -> None:
