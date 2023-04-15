@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import atexit
 import logging
+import logging.handlers
 import sys
 import time
 from contextlib import suppress
