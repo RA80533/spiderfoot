@@ -507,7 +507,8 @@ class SpiderFootPlugin():
                     return
 
                 try:
-                    listener.handleEvent(sfEvent)
+                    if not listener.errorState:
+                        listener.handleEvent(sfEvent)
                 except Exception as e:
                     self.sf.error(f"Module ({listener.__module__}) encountered an error: {e}")
                     # set errorState
