@@ -278,7 +278,7 @@ class SpiderFoot:
             else:
                 fp.write(data)
 
-    def cacheGet(self, label: str, timeoutHrs: int) -> str:
+    def cacheGet(self, label: str, timeoutHrs: int) -> str | None:
         """Retreive data from the cache.
 
         Args:
@@ -663,7 +663,7 @@ class SpiderFoot:
         self.debug(f"Keywords: {keywords}")
         return set([k for k in keywords if k])
 
-    def hostDomain(self, hostname: str, tldList: list) -> str:
+    def hostDomain(self, hostname: str, tldList: list) -> str | None:
         """Obtain the domain name for a supplied hostname.
 
         Args:
@@ -978,7 +978,7 @@ class SpiderFoot:
         sock.do_handshake()
         return sock
 
-    def parseCert(self, rawcert: str, fqdn: str = None, expiringdays: int = 30) -> dict:
+    def parseCert(self, rawcert: str, fqdn: str | None = None, expiringdays: int = 30) -> dict | None:
         """Parse a PEM-format SSL certificate.
 
         Args:
@@ -1196,17 +1196,17 @@ class SpiderFoot:
     def fetchUrl(
         self,
         url: str,
-        cookies: str = None,
+        cookies: str | None = None,
         timeout: int = 30,
         useragent: str = "SpiderFoot",
-        headers: dict = None,
+        headers: dict | None = None,
         noLog: bool = False,
-        postData: str = None,
+        postData: str | None = None,
         disableContentEncoding: bool = False,
-        sizeLimit: int = None,
+        sizeLimit: int | None = None,
         headOnly: bool = False,
         verify: bool = True
-    ) -> dict:
+    ) -> dict | None:
         """Fetch a URL and return the HTTP response as a dictionary.
 
         Args:
@@ -1461,7 +1461,7 @@ class SpiderFoot:
 
         return True
 
-    def cveInfo(self, cveId: str, sources: str = "circl,nist") -> (str, str):
+    def cveInfo(self, cveId: str, sources: str = "circl,nist") -> (str, str) | None:
         """Look up a CVE ID for more information in the first available source.
 
         Args:
@@ -1544,7 +1544,7 @@ class SpiderFoot:
 
         return (eventType, f"{cveId}\nScore: Unknown\nDescription: Unknown")
 
-    def googleIterate(self, searchString: str, opts: dict = None) -> dict:
+    def googleIterate(self, searchString: str, opts: dict | None = None) -> dict | None:
         """Request search results from the Google API.
 
         Will return a dict:
@@ -1608,7 +1608,7 @@ class SpiderFoot:
             "webSearchUrl": f"https://www.google.com/search?q={search_string}&{params}"
         }
 
-    def bingIterate(self, searchString: str, opts: dict = None) -> dict:
+    def bingIterate(self, searchString: str, opts: dict | None = None) -> dict | None:
         """Request search results from the Bing API.
 
         Will return a dict:
