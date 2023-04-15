@@ -36,6 +36,7 @@ import netaddr
 import OpenSSL
 import requests
 import urllib3
+import urllib3.exceptions
 from publicsuffixlist import PublicSuffixList
 from spiderfoot import SpiderFootHelpers
 from typing import Any, Dict
