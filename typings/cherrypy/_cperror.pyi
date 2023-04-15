@@ -265,7 +265,7 @@ class NotFound(HTTPError):
 
 
 _HTTPErrorTemplate = ...
-def get_error_page(status, **kwargs):
+def get_error_page(status: ..., **kwargs: ...) -> ...:
     """Return an HTML page, containing a pretty error response.
 
     status should be an int or a str.
@@ -274,7 +274,7 @@ def get_error_page(status, **kwargs):
     ...
 
 _ie_friendly_error_sizes = ...
-def format_exc(exc=...): # -> Literal['']:
+def format_exc(exc: ... = ...) -> ...: # -> Literal['']:
     """Return exc (or sys.exc_info if None), formatted."""
     ...
 
