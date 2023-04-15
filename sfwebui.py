@@ -88,7 +88,7 @@ class SpiderFootWebUi:
 
         # Set up logging
         if loggingQueue is None:
-            self.loggingQueue = mp.Queue()
+            self.loggingQueue: mp.Queue[logging.LogRecord] = mp.Queue()
             logListenerSetup(self.loggingQueue, self.config)
         else:
             self.loggingQueue = loggingQueue
