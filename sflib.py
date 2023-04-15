@@ -467,16 +467,16 @@ class SpiderFoot:
 
         return returnOpts
 
-    def modulesProducing(self, events: list) -> list:
+    def modulesProducing(self, events: list[str]) -> list[str]:
         """Return an array of modules that produce the list of types supplied.
 
         Args:
-            events (list): list of event types
+            events (list[str]): list of event types
 
         Returns:
-            list: list of modules
+            list[str]: list of modules
         """
-        modlist = list()
+        modlist: list[str] = list()
 
         if not events:
             return modlist
@@ -501,16 +501,16 @@ class SpiderFoot:
 
         return list(set(modlist))
 
-    def modulesConsuming(self, events: list) -> list:
+    def modulesConsuming(self, events: list[str]) -> list[str]:
         """Return an array of modules that consume the list of types supplied.
 
         Args:
-            events (list): list of event types
+            events (list[str]): list of event types
 
         Returns:
-            list: list of modules
+            list[str]: list of modules
         """
-        modlist = list()
+        modlist: list[str] = list()
 
         if not events:
             return modlist
@@ -536,16 +536,16 @@ class SpiderFoot:
 
         return list(set(modlist))
 
-    def eventsFromModules(self, modules: list) -> list:
+    def eventsFromModules(self, modules: list[str]) -> list[str]:
         """Return an array of types that are produced by the list of modules supplied.
 
         Args:
-            modules (list): list of modules
+            modules (list[str]): list of modules
 
         Returns:
-            list: list of types
+            list[str]: list of types
         """
-        evtlist = list()
+        evtlist: list[str] = list()
 
         if not modules:
             return evtlist
@@ -564,16 +564,16 @@ class SpiderFoot:
 
         return evtlist
 
-    def eventsToModules(self, modules: list) -> list:
+    def eventsToModules(self, modules: list[str]) -> list[str]:
         """Return an array of types that are consumed by the list of modules supplied.
 
         Args:
-            modules (list): list of modules
+            modules (list[str]): list of modules
 
         Returns:
-            list: list of types
+            list[str]: list of types
         """
-        evtlist = list()
+        evtlist: list[str] = list()
 
         if not modules:
             return evtlist
@@ -592,7 +592,7 @@ class SpiderFoot:
 
         return evtlist
 
-    def urlFQDN(self, url: str) -> str:
+    def urlFQDN(self, url: str) -> str | None:
         """Extract the FQDN from a URL.
 
         Args:
@@ -614,7 +614,7 @@ class SpiderFoot:
         # http://abc.com will split to ['http:', '', 'abc.com']
         return baseurl.split('/')[count].lower()
 
-    def domainKeyword(self, domain: str, tldList: list) -> str:
+    def domainKeyword(self, domain: str, tldList: list) -> str | None:
         """Extract the keyword (the domain without the TLD or any subdomains) from a domain.
 
         Args:
@@ -829,14 +829,14 @@ class SpiderFoot:
                     ret.append(host)
         return ret
 
-    def resolveHost(self, host: str) -> list:
+    def resolveHost(self, host: str) -> list[str]:
         """Return a normalised IPv4 resolution of a hostname.
 
         Args:
             host (str): host to resolve
 
         Returns:
-            list: IP addresses
+            list[str]: IP addresses
         """
         if not host:
             self.error(f"Unable to resolve host: {host} (Invalid host)")
@@ -857,14 +857,14 @@ class SpiderFoot:
 
         return list(set(addrs))
 
-    def resolveIP(self, ipaddr: str) -> list:
+    def resolveIP(self, ipaddr: str) -> list[str]:
         """Return a normalised resolution of an IPv4 or IPv6 address.
 
         Args:
             ipaddr (str): IP address to reverse resolve
 
         Returns:
-            list: list of domain names
+            list[str]: list of domain names
         """
 
         if not self.validIP(ipaddr) and not self.validIP6(ipaddr):
@@ -887,14 +887,14 @@ class SpiderFoot:
 
         return list(set(addrs))
 
-    def resolveHost6(self, hostname: str) -> list:
+    def resolveHost6(self, hostname: str) -> list[str]:
         """Return a normalised IPv6 resolution of a hostname.
 
         Args:
             hostname (str): hostname to resolve
 
         Returns:
-            list
+            list[str]
         """
         if not hostname:
             self.error(f"Unable to resolve host: {hostname} (Invalid host)")
