@@ -24,6 +24,7 @@ import socket
 import ssl
 import sys
 import time
+import typing
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -194,7 +195,7 @@ class SpiderFoot:
 
         self.log.error(message, extra={'scanId': self._scanId})
 
-    def fatal(self, error: str) -> None:
+    def fatal(self, error: str) -> typing.Never:
         """Print an error message and stacktrace then exit.
 
         Args:
