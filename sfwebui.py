@@ -181,17 +181,20 @@ class SpiderFootWebUi:
             }
         }
 
-    def error(self: 'SpiderFootWebUi', message: str) -> None:
+    def error(self: 'SpiderFootWebUi', message: str) -> str:
         """Show generic error page with error message.
 
         Args:
             message (str): error message
 
         Returns:
-            None
+            str
         """
         templ = Template(filename='spiderfoot/templates/error.tmpl', lookup=self.lookup)
-        return templ.render(message=message, docroot=self.docroot, version=__version__)
+        output = templ.render(message=message, docroot=self.docroot, version=__version__)
+        if isinstance(output, bytes):
+            return output.decode()
+        return output
 
     def cleanUserInput(self: 'SpiderFootWebUi', inputList: list[str]) -> list[str]:
         """Convert data to HTML entities; except quotes and ampersands.
