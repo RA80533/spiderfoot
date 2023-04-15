@@ -387,12 +387,12 @@ class SpiderFootWebUi:
             scaninfo = dbh.scanInstanceGet(id)
             scan_name = scaninfo[0]
         except Exception:
-            return json.dumps(["ERROR", "Could not retrieve info for scan."]).encode('utf-8')
+            return json.dumps(["ERROR", "Could not retrieve info for scan."])
 
         try:
             correlations = dbh.scanCorrelationList(id)
         except Exception:
-            return json.dumps(["ERROR", "Could not retrieve correlations for scan."]).encode('utf-8')
+            return json.dumps(["ERROR", "Could not retrieve correlations for scan."])
 
         headings = ["Rule Name", "Correlation", "Risk", "Description"]
 
@@ -1228,12 +1228,12 @@ class SpiderFootWebUi:
         dbh = SpiderFootDb(self.config)
 
         if fp not in ["0", "1"]:
-            return json.dumps(["ERROR", "No FP flag set or not set correctly."]).encode('utf-8')
+            return json.dumps(["ERROR", "No FP flag set or not set correctly."])
 
         try:
             ids = json.loads(resultids)
         except Exception:
-            return json.dumps(["ERROR", "No IDs supplied."]).encode('utf-8')
+            return json.dumps(["ERROR", "No IDs supplied."])
 
         # Cannot set FPs if a scan is not completed
         status = dbh.scanInstanceGet(id)
@@ -1244,7 +1244,7 @@ class SpiderFootWebUi:
             return json.dumps([
                 "WARNING",
                 "Scan must be in a finished state when setting False Positives."
-            ]).encode('utf-8')
+            ])
 
         # Make sure the user doesn't set something as non-FP when the
         # parent is set as an FP.
@@ -1255,7 +1255,7 @@ class SpiderFootWebUi:
                     return json.dumps([
                         "WARNING",
                         f"Cannot unset element {id} as False Positive if a parent element is still False Positive."
-                    ]).encode('utf-8')
+                    ])
 
         # Set all the children as FPs too.. it's only logical afterall, right?
         childs = dbh.scanElementChildrenAll(id, ids)
@@ -1263,9 +1263,9 @@ class SpiderFootWebUi:
 
         ret = dbh.scanResultsUpdateFP(id, allIds, fp)
         if ret:
-            return json.dumps(["SUCCESS", ""]).encode('utf-8')
+            return json.dumps(["SUCCESS", ""])
 
-        return json.dumps(["ERROR", "Exception encountered."]).encode('utf-8')
+        return json.dumps(["ERROR", "Exception encountered."])
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -1397,21 +1397,21 @@ class SpiderFootWebUi:
         if not scanname:
             if cherrypy.request.headers.get('Accept') and 'application/json' in cherrypy.request.headers.get('Accept'):
                 cherrypy.response.headers['Content-Type'] = "application/json; charset=utf-8"
-                return json.dumps(["ERROR", "Incorrect usage: scan name was not specified."]).encode('utf-8')
+                return json.dumps(["ERROR", "Incorrect usage: scan name was not specified."])
 
             return self.error("Invalid request: scan name was not specified.")
 
         if not scantarget:
             if cherrypy.request.headers.get('Accept') and 'application/json' in cherrypy.request.headers.get('Accept'):
                 cherrypy.response.headers['Content-Type'] = "application/json; charset=utf-8"
-                return json.dumps(["ERROR", "Incorrect usage: scan target was not specified."]).encode('utf-8')
+                return json.dumps(["ERROR", "Incorrect usage: scan target was not specified."])
 
             return self.error("Invalid request: scan target was not specified.")
 
         if not typelist and not modulelist and not usecase:
             if cherrypy.request.headers.get('Accept') and 'application/json' in cherrypy.request.headers.get('Accept'):
                 cherrypy.response.headers['Content-Type'] = "application/json; charset=utf-8"
-                return json.dumps(["ERROR", "Incorrect usage: no modules specified for scan."]).encode('utf-8')
+                return json.dumps(["ERROR", "Incorrect usage: no modules specified for scan."])
 
             return self.error("Invalid request: no modules specified for scan.")
 
@@ -1419,7 +1419,7 @@ class SpiderFootWebUi:
         if targetType is None:
             if cherrypy.request.headers.get('Accept') and 'application/json' in cherrypy.request.headers.get('Accept'):
                 cherrypy.response.headers['Content-Type'] = "application/json; charset=utf-8"
-                return json.dumps(["ERROR", "Unrecognised target type."]).encode('utf-8')
+                return json.dumps(["ERROR", "Unrecognised target type."])
 
             return self.error("Invalid target type. Could not recognize it as a target SpiderFoot supports.")
 
@@ -1466,7 +1466,7 @@ class SpiderFootWebUi:
         if not modlist:
             if cherrypy.request.headers.get('Accept') and 'application/json' in cherrypy.request.headers.get('Accept'):
                 cherrypy.response.headers['Content-Type'] = "application/json; charset=utf-8"
-                return json.dumps(["ERROR", "Incorrect usage: no modules specified for scan."]).encode('utf-8')
+                return json.dumps(["ERROR", "Incorrect usage: no modules specified for scan."])
 
             return self.error("Invalid request: no modules specified for scan.")
 
@@ -1503,7 +1503,7 @@ class SpiderFootWebUi:
 
         if cherrypy.request.headers.get('Accept') and 'application/json' in cherrypy.request.headers.get('Accept'):
             cherrypy.response.headers['Content-Type'] = "application/json; charset=utf-8"
-            return json.dumps(["SUCCESS", scanId]).encode('utf-8')
+            return json.dumps(["SUCCESS", scanId])
 
         raise cherrypy.HTTPRedirect(f"{self.docroot}/scaninfo?id={scanId}")
 
