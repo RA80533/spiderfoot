@@ -278,18 +278,18 @@ class SpiderFootWebUi:
 
         return retdata
 
-    def buildExcel(self: 'SpiderFootWebUi', data: list, columnNames: list, sheetNameIndex: int = 0) -> str:
+    def buildExcel(self: 'SpiderFootWebUi', data: list, columnNames: list[str], sheetNameIndex: int = 0) -> str:
         """Convert supplied raw data into GEXF (Graph Exchange XML Format) format (e.g. for Gephi).
 
         Args:
             data (list): Scan result as list
-            columnNames (list): column names
+            columnNames (list[str]): column names
             sheetNameIndex (int): TBD
 
         Returns:
             str: Excel workbook
         """
-        rowNums = dict()
+        rowNums: dict[str, int] = dict()
         workbook = openpyxl.Workbook()
         defaultSheet = workbook.active
         columnNames.pop(sheetNameIndex)
