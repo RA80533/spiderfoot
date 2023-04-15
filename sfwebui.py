@@ -193,14 +193,14 @@ class SpiderFootWebUi:
         templ = Template(filename='spiderfoot/templates/error.tmpl', lookup=self.lookup)
         return templ.render(message=message, docroot=self.docroot, version=__version__)
 
-    def cleanUserInput(self: 'SpiderFootWebUi', inputList: list) -> list:
+    def cleanUserInput(self: 'SpiderFootWebUi', inputList: list[str]) -> list[str]:
         """Convert data to HTML entities; except quotes and ampersands.
 
         Args:
-            inputList (list): list of strings to sanitize
+            inputList (list[str]): list of strings to sanitize
 
         Returns:
-            list: sanitized input
+            list[str]: sanitized input
 
         Raises:
             TypeError: inputList type was invalid
@@ -212,7 +212,7 @@ class SpiderFootWebUi:
         if not isinstance(inputList, list):
             raise TypeError(f"inputList is {type(inputList)}; expected list()")
 
-        ret = list()
+        ret: list[str] = list()
 
         for item in inputList:
             if not item:
@@ -1339,11 +1339,11 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def ping(self: 'SpiderFootWebUi') -> list:
+    def ping(self: 'SpiderFootWebUi') -> list[str]:
         """For the CLI to test connectivity to this server.
 
         Returns:
-            list: SpiderFoot version as JSON
+            list[str]: SpiderFoot version as JSON
         """
         return ["SUCCESS", __version__]
 
