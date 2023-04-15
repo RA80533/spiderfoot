@@ -77,7 +77,7 @@ class SpiderFootWebUi:
         if not config:
             raise ValueError("web_config is empty")
 
-        self.docroot = web_config.get('root', '/').rstrip('/')
+        self.docroot: str = web_config.get('root', '/').rstrip('/')
 
         # 'config' supplied will be the defaults, let's supplement them
         # now with any configuration which may have previously been saved.
