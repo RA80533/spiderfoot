@@ -69,14 +69,14 @@ class SpiderFootSqliteLogHandler(logging.Handler):
         self.dbh = SpiderFootDb(self.opts)
 
 
-def logListenerSetup(loggingQueue: Queue, opts: dict = None) -> 'logging.handlers.QueueListener':
+def logListenerSetup(loggingQueue: Queue[logging.LogRecord], opts: dict = None) -> 'logging.handlers.QueueListener':
     """Create and start a SpiderFoot log listener in its own thread.
 
     This function should be called as soon as possible in the main
     process, or whichever process is attached to stdin/stdout.
 
     Args:
-        loggingQueue (Queue): Queue (accepts both normal and multiprocessing queue types)
+        loggingQueue (Queue[logging.LogRecord]): Queue (accepts both normal and multiprocessing queue types)
                               Must be instantiated in the main process.
         opts (dict): SpiderFoot config
 
@@ -137,11 +137,11 @@ def logListenerSetup(loggingQueue: Queue, opts: dict = None) -> 'logging.handler
     return spiderFootLogListener
 
 
-def logWorkerSetup(loggingQueue: Queue) -> 'logging.Logger':
+def logWorkerSetup(loggingQueue: Queue[logging.LogRecord]) -> 'logging.Logger':
     """Root SpiderFoot logger.
 
     Args:
-        loggingQueue (Queue): TBD
+        loggingQueue (Queue[logging.LogRecord]): TBD
 
     Returns:
         logging.Logger: Logger
