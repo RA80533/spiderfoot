@@ -88,7 +88,7 @@ class _HandleSignalsPlugin:
     
 
 
-server = ...
+server: ... = ...
 def quickstart(root=..., script_name=..., config=...): # -> None:
     """Mount the given root, start the builtin server (and engine), then block.
 
