@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
 import asyncio
 import functools
 import io
@@ -9,8 +8,9 @@ import os
 import queue
 import sys
 import threading
-from time import sleep
 import traceback
+from contextlib import suppress
+from time import sleep
 
 from .db import SpiderFootDb
 from .event import SpiderFootEvent
