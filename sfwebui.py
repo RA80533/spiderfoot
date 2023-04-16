@@ -25,6 +25,7 @@ from io import BytesIO, StringIO
 from operator import itemgetter
 
 import cherrypy
+import cherrypy._cpreqbody
 from cherrypy import _cperror
 
 from mako.lookup import TemplateLookup
