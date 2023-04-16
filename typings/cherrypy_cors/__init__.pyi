@@ -119,7 +119,7 @@ def preflight(allowed_methods, allowed_headers=..., allow_credentials=..., max_a
     """
     ...
 
-def install(): # -> None:
+def install() -> None:
     """Install the toolbox such that it's available in all applications."""
     ...
 
