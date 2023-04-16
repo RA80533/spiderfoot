@@ -89,7 +89,7 @@ class _HandleSignalsPlugin:
 
 
 server: ... = ...
-def quickstart(root=..., script_name=..., config=...): # -> None:
+def quickstart(root: ... = ..., script_name: ... = ..., config: ... = ...) -> None:
     """Mount the given root, start the builtin server (and engine), then block.
 
     root: an instance of a "controller class" (a collection of page handler
