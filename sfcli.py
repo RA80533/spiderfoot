@@ -26,6 +26,7 @@ import time
 from os.path import expanduser
 
 import requests
+import requests.auth
 
 
 ASCII_LOGO = r"""
