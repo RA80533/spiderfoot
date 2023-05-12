@@ -355,7 +355,6 @@ class SpiderFootDb:
                 self.dbh.execute('SELECT COUNT(*) FROM tbl_scan_config')
                 self.conn.create_function("REGEXP", 2, __dbregex__)
             except sqlite3.Error:
-                init = True
                 try:
                     self.create()
                 except Exception as e:
@@ -375,23 +374,6 @@ class SpiderFootDb:
                     raise IOError("Looks like you are running a pre-4.0 database. Unfortunately "
                                   "SpiderFoot wasn't able to migrate you, so you'll need to delete "
                                   "your SpiderFoot database in order to proceed.") from None
-
-            if init:
-                for row in self.eventDetails:
-                    event = row[0]
-                    event_descr = row[1]
-                    event_raw = row[2]
-                    event_type = row[3]
-                    qry = "INSERT INTO tbl_event_types (event, event_descr, event_raw, event_type) VALUES (?, ?, ?, ?)"
-
-                    try:
-                        self.dbh.execute(qry, (
-                            event, event_descr, event_raw, event_type
-                        ))
-                        self.conn.commit()
-                    except Exception:
-                        continue
-                self.conn.commit()
 
     #
     # Back-end database operations
