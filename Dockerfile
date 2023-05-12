@@ -46,7 +46,6 @@ RUN ls
 RUN echo "$REQUIREMENTS"
 RUN pip3 install -U pip
 RUN pip3 install -r "$REQUIREMENTS"
-RUN pip3 install MonkeyType
 
 
 
@@ -82,5 +81,5 @@ USER spiderfoot
 EXPOSE 5001
 
 # Run the application.
-ENTRYPOINT ["/opt/venv/bin/monkeytype"]
-CMD ["run", "sf.py", "-l", "0.0.0.0:5001"]
+ENTRYPOINT ["/opt/venv/bin/python"]
+CMD ["sf.py", "-l", "0.0.0.0:5001"]
