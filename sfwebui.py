@@ -197,39 +197,6 @@ class SpiderFootWebUi:
             return output.decode()
         return output
 
-    def cleanUserInput(self, inputList: list[str]) -> list[str]:
-        """Convert data to HTML entities; except quotes and ampersands.
-
-        Args:
-            inputList (list[str]): list of strings to sanitize
-
-        Returns:
-            list[str]: sanitized input
-
-        Raises:
-            TypeError: inputList type was invalid
-
-        Todo:
-            Review all uses of this function, then remove it.
-            Use of this function is overloaded.
-        """
-        if not isinstance(inputList, list):
-            raise TypeError(f"inputList is {type(inputList)}; expected list()")
-
-        ret: list[str] = list()
-
-        for item in inputList:
-            if not item:
-                ret.append('')
-                continue
-            c = html.escape(item, True)
-
-            # Decode '&' and '"' HTML entities
-            c = c.replace("&amp;", "&").replace("&quot;", "\"")
-            ret.append(c)
-
-        return ret
-
     def searchBase(self, id: str | None = None, eventType: str | None = None, value: str | None = None) -> list:
         """Search.
 
@@ -1095,7 +1062,7 @@ class SpiderFootWebUi:
             useropts = json.loads(allopts)
             cleanopts = dict()
             for opt in list(useropts.keys()):
-                cleanopts[opt] = self.cleanUserInput([useropts[opt]])[0]
+                cleanopts[opt] = cleanUserInput([useropts[opt]])[0]
 
             currentopts = deepcopy(self.config)
 
@@ -1137,7 +1104,7 @@ class SpiderFootWebUi:
             useropts = json.loads(allopts)
             cleanopts = dict()
             for opt in list(useropts.keys()):
-                cleanopts[opt] = self.cleanUserInput([useropts[opt]])[0]
+                cleanopts[opt] = cleanUserInput([useropts[opt]])[0]
 
             currentopts = deepcopy(self.config)
 
@@ -1346,8 +1313,8 @@ class SpiderFootWebUi:
         Raises:
             HTTPRedirect: redirect to new scan info page
         """
-        scanname = self.cleanUserInput([scanname])[0]
-        scantarget = self.cleanUserInput([scantarget])[0]
+        scanname = cleanUserInput([scanname])[0]
+        scantarget = cleanUserInput([scantarget])[0]
 
         if not scanname:
             if cherrypy.request.headers.get('Accept') and 'application/json' in cherrypy.request.headers.get('Accept'):
@@ -1890,3 +1857,37 @@ def buildExcel(data: list, columnNames: list[str], sheetNameIndex: int = 0) -> s
         workbook.save(f)
         f.seek(0)
         return f.read()
+
+
+def cleanUserInput(inputList: list[str]) -> list[str]:
+    """Convert data to HTML entities; except quotes and ampersands.
+    
+    Args:
+        inputList (list[str]): list of strings to sanitize
+    
+    Returns:
+        list[str]: sanitized input
+    
+    Raises:
+        TypeError: inputList type was invalid
+    
+    Todo:
+        Review all uses of this function, then remove it.
+        Use of this function is overloaded.
+    """
+    if not isinstance(inputList, list):
+        raise TypeError(f"inputList is {type(inputList)}; expected list()")
+    
+    ret: list[str] = list()
+    
+    for item in inputList:
+        if not item:
+            ret.append('')
+            continue
+        c = html.escape(item, True)
+        
+        # Decode '&' and '"' HTML entities
+        c = c.replace("&amp;", "&").replace("&quot;", "\"")
+        ret.append(c)
+    
+    return ret

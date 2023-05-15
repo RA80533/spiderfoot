@@ -2,7 +2,7 @@
 import pytest
 import unittest
 
-from sfwebui import SpiderFootWebUi
+from sfwebui import SpiderFootWebUi, cleanUserInput
 
 
 @pytest.mark.usefixtures
@@ -77,7 +77,7 @@ class TestSpiderFootWebUi(unittest.TestCase):
         opts = self.default_options
         opts['__modules__'] = dict()
         sfwebui = SpiderFootWebUi(self.web_default_options, opts)
-        clean_user_input = sfwebui.cleanUserInput(list())
+        clean_user_input = cleanUserInput(list())
         self.assertIsInstance(clean_user_input, list)
 
     def test_clean_user_input_invalid_input_should_raise(self):
@@ -89,14 +89,14 @@ class TestSpiderFootWebUi(unittest.TestCase):
         for invalid_type in invalid_types:
             with self.subTest(invalid_type=invalid_type):
                 with self.assertRaises(TypeError):
-                    sfwebui.cleanUserInput(invalid_type)
+                    cleanUserInput(invalid_type)
 
     def test_clean_user_input_should_clean_user_input(self):
         opts = self.default_options
         opts['__modules__'] = dict()
         sfwebui = SpiderFootWebUi(self.web_default_options, opts)
 
-        clean_input = sfwebui.cleanUserInput([
+        clean_input = cleanUserInput([
             "<p>some HTML with \"some quotes\" & some JavaScript\n<script>alert('JavaScript')</script></p>",
             "Some more input. This function accepts a list"
         ])
