@@ -301,8 +301,6 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        if not isinstance(opts, dict):
-            raise TypeError(f"opts is {type(opts)}; expected dict()") from None
         if not opts:
             raise ValueError("opts is empty") from None
         if not opts.get('__database'):
@@ -449,9 +447,6 @@ class SpiderFootDb:
             ValueError: arg value was invalid
             IOError: database I/O failed
         """
-        if not isinstance(criteria, dict):
-            raise TypeError(f"criteria is {type(criteria)}; expected dict()") from None
-
         valid_criteria = ['scan_id', 'type', 'value', 'regex']
 
         for key in list(criteria.keys()):
@@ -593,15 +588,6 @@ class SpiderFootDb:
             Do something smarter to handle database locks
         """
 
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
-
-        if not isinstance(classification, str):
-            raise TypeError(f"classification is {type(classification)}; expected str()") from None
-
-        if not isinstance(message, str):
-            raise TypeError(f"message is {type(message)}; expected str()") from None
-
         if not component:
             component = "SpiderFoot"
 
@@ -635,15 +621,6 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
-
-        if not isinstance(scanName, str):
-            raise TypeError(f"scanName is {type(scanName)}; expected str()") from None
-
-        if not isinstance(scanTarget, str):
-            raise TypeError(f"scanTarget is {type(scanTarget)}; expected str()") from None
-
         qry = "INSERT INTO tbl_scan_instance \
             (guid, name, seed_target, created, status) \
             VALUES (?, ?, ?, ?, ?)"
@@ -670,9 +647,6 @@ class SpiderFootDb:
             TypeError: arg type was invalid
             IOError: database I/O failed
         """
-
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
 
         qvars = list()
         qry = "UPDATE tbl_scan_instance SET "
@@ -714,9 +688,6 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
-
         qry = "SELECT name, seed_target, ROUND(created/1000) AS created, \
             ROUND(started/1000) AS started, ROUND(ended/1000) AS ended, status \
             FROM tbl_scan_instance WHERE guid = ?"
@@ -744,12 +715,6 @@ class SpiderFootDb:
             ValueError: arg value was invalid
             IOError: database I/O failed
         """
-
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
-
-        if not isinstance(by, str):
-            raise TypeError(f"by is {type(by)}; expected str()") from None
 
         if by not in ["type", "module", "entity"]:
             raise ValueError(f"Invalid filter by value: {by}") from None
@@ -799,12 +764,6 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
-
-        if not isinstance(by, str):
-            raise TypeError(f"by is {type(by)}; expected str()") from None
-
         if by not in ["rule", "risk"]:
             raise ValueError(f"Invalid filter by value: {by}") from None
 
@@ -841,9 +800,6 @@ class SpiderFootDb:
             TypeError: arg type was invalid
             IOError: database I/O failed
         """
-
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
 
         qry = "SELECT c.id, c.title, c.rule_id, c.rule_risk, c.rule_name, \
             c.rule_descr, c.rule_logic, count(e.event_hash) AS event_count FROM \
@@ -888,9 +844,6 @@ class SpiderFootDb:
             TypeError: arg type was invalid
             IOError: database I/O failed
         """
-
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
 
         if not isinstance(eventType, str) and not isinstance(eventType, list):
             raise TypeError(f"eventType is {type(eventType)}; expected str() or list()") from None
@@ -974,12 +927,6 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
-
-        if not isinstance(eventType, str):
-            raise TypeError(f"eventType is {type(eventType)}; expected str()") from None
-
         qry = "SELECT DISTINCT data, type, COUNT(*) FROM tbl_scan_results \
             WHERE scan_instance_id = ?"
         qvars = [instanceId]
@@ -1016,9 +963,6 @@ class SpiderFootDb:
             TypeError: arg type was invalid
             IOError: database I/O failed
         """
-
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
 
         qry = "SELECT generated AS generated, component, \
             type, message, rowid FROM tbl_scan_log WHERE scan_instance_id = ?"
@@ -1061,12 +1005,6 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
-
-        if not isinstance(limit, int):
-            raise TypeError(f"limit is {type(limit)}; expected int()") from None
-
         qry = "SELECT generated AS generated, component, \
             message FROM tbl_scan_log WHERE scan_instance_id = ? \
             AND type = 'ERROR' ORDER BY generated DESC"
@@ -1096,9 +1034,6 @@ class SpiderFootDb:
             TypeError: arg type was invalid
             IOError: database I/O failed
         """
-
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
 
         qry1 = "DELETE FROM tbl_scan_instance WHERE guid = ?"
         qry2 = "DELETE FROM tbl_scan_config WHERE scan_instance_id = ?"
@@ -1134,12 +1069,6 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
-
-        if not isinstance(resultHashes, list):
-            raise TypeError(f"resultHashes is {type(resultHashes)}; expected list()") from None
-
         with self.dbhLock:
             for resultHash in resultHashes:
                 qry = "UPDATE tbl_scan_results SET false_positive = ? WHERE \
@@ -1172,8 +1101,6 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        if not isinstance(optMap, dict):
-            raise TypeError(f"optMap is {type(optMap)}; expected dict()") from None
         if not optMap:
             raise ValueError("optMap is empty") from None
 
@@ -1300,9 +1227,6 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
-
         qry = "SELECT component, opt, val FROM tbl_scan_config \
                 WHERE scan_instance_id = ? ORDER BY component, opt"
         qvars = [instanceId]
@@ -1336,62 +1260,35 @@ class SpiderFootDb:
         """
         from spiderfoot import SpiderFootEvent
 
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
-
         if not instanceId:
             raise ValueError("instanceId is empty") from None
 
         if not isinstance(sfEvent, SpiderFootEvent):
             raise TypeError(f"sfEvent is {type(sfEvent)}; expected SpiderFootEvent()") from None
 
-        if not isinstance(sfEvent.generated, float):
-            raise TypeError(f"sfEvent.generated is {type(sfEvent.generated)}; expected float()") from None
-
         if not sfEvent.generated:
             raise ValueError("sfEvent.generated is empty") from None
-
-        if not isinstance(sfEvent.eventType, str):
-            raise TypeError(f"sfEvent.eventType is {type(sfEvent.eventType,)}; expected str()") from None
 
         if not sfEvent.eventType:
             raise ValueError("sfEvent.eventType is empty") from None
 
-        if not isinstance(sfEvent.data, str):
-            raise TypeError(f"sfEvent.data is {type(sfEvent.data)}; expected str()") from None
-
         if not sfEvent.data:
             raise ValueError("sfEvent.data is empty") from None
-
-        if not isinstance(sfEvent.module, str):
-            raise TypeError(f"sfEvent.module is {type(sfEvent.module)}; expected str()") from None
 
         if not sfEvent.module and sfEvent.eventType != "ROOT":
             raise ValueError("sfEvent.module is empty") from None
 
-        if not isinstance(sfEvent.confidence, int):
-            raise TypeError(f"sfEvent.confidence is {type(sfEvent.confidence)}; expected int()") from None
-
         if not 0 <= sfEvent.confidence <= 100:
             raise ValueError(f"sfEvent.confidence value is {type(sfEvent.confidence)}; expected 0 - 100") from None
 
-        if not isinstance(sfEvent.visibility, int):
-            raise TypeError(f"sfEvent.visibility is {type(sfEvent.visibility)}; expected int()") from None
-
         if not 0 <= sfEvent.visibility <= 100:
             raise ValueError(f"sfEvent.visibility value is {type(sfEvent.visibility)}; expected 0 - 100") from None
-
-        if not isinstance(sfEvent.risk, int):
-            raise TypeError(f"sfEvent.risk is {type(sfEvent.risk)}; expected int()") from None
 
         if not 0 <= sfEvent.risk <= 100:
             raise ValueError(f"sfEvent.risk value is {type(sfEvent.risk)}; expected 0 - 100") from None
 
         if not isinstance(sfEvent.sourceEvent, SpiderFootEvent) and sfEvent.eventType != "ROOT":
             raise TypeError(f"sfEvent.sourceEvent is {type(sfEvent.sourceEvent)}; expected str()") from None
-
-        if not isinstance(sfEvent.sourceEventHash, str):
-            raise TypeError(f"sfEvent.sourceEventHash is {type(sfEvent.sourceEventHash)}; expected str()") from None
 
         if not sfEvent.sourceEventHash:
             raise ValueError("sfEvent.sourceEventHash is empty") from None
@@ -1464,9 +1361,6 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
-
         qry = "SELECT STRFTIME('%H:%M %w', generated, 'unixepoch') AS hourmin, \
                 type, COUNT(*) FROM tbl_scan_results \
                 WHERE scan_instance_id = ? GROUP BY hourmin, type"
@@ -1493,12 +1387,6 @@ class SpiderFootDb:
             TypeError: arg type was invalid
             IOError: database I/O failed
         """
-
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
-
-        if not isinstance(elementIdList, list):
-            raise TypeError(f"elementIdList is {type(elementIdList)}; expected list()") from None
 
         hashIds = []
         for hashId in elementIdList:
@@ -1545,12 +1433,6 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()")
-
-        if not isinstance(elementIdList, list):
-            raise TypeError(f"elementIdList is {type(elementIdList)}; expected list()")
-
         hashIds = []
         for hashId in elementIdList:
             if not hashId:
@@ -1593,12 +1475,6 @@ class SpiderFootDb:
             TypeError: arg type was invalid
             ValueError: arg value was invalid
         """
-
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()")
-
-        if not isinstance(childData, list):
-            raise TypeError(f"childData is {type(childData)}; expected list()")
 
         if not childData:
             raise ValueError("childData is empty")
@@ -1667,12 +1543,6 @@ class SpiderFootDb:
               This function returns only ids.
         """
 
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()")
-
-        if not isinstance(parentIds, list):
-            raise TypeError(f"parentIds is {type(parentIds)}; expected list()")
-
         datamap = list()
         keepGoing = True
         nextIds = list()
@@ -1728,30 +1598,6 @@ class SpiderFootDb:
         Returns:
             str: Correlation ID created
         """
-
-        if not isinstance(instanceId, str):
-            raise TypeError(f"instanceId is {type(instanceId)}; expected str()")
-
-        if not isinstance(ruleId, str):
-            raise TypeError(f"ruleId is {type(ruleId)}; expected str()")
-
-        if not isinstance(ruleName, str):
-            raise TypeError(f"ruleName is {type(ruleName)}; expected str()")
-
-        if not isinstance(ruleDescr, str):
-            raise TypeError(f"ruleDescr is {type(ruleDescr)}; expected str()")
-
-        if not isinstance(ruleRisk, str):
-            raise TypeError(f"ruleRisk is {type(ruleRisk)}; expected str()")
-
-        if not isinstance(ruleYaml, str):
-            raise TypeError(f"ruleYaml is {type(ruleYaml)}; expected str()")
-
-        if not isinstance(correlationTitle, str):
-            raise TypeError(f"correlationTitle is {type(correlationTitle)}; expected str()")
-
-        if not isinstance(eventHashes, list):
-            raise TypeError(f"eventHashes is {type(eventHashes)}; expected list()")
 
         uniqueId = str(hashlib.md5(str(time.time() + random.SystemRandom().randint(0, 99999999)).encode('utf-8')).hexdigest())  # noqa: DUO130
 
