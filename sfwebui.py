@@ -282,55 +282,6 @@ class SpiderFootWebUi:
 
         return retdata
 
-    def buildExcel(self, data: list, columnNames: list[str], sheetNameIndex: int = 0) -> str:
-        """Convert supplied raw data into GEXF (Graph Exchange XML Format) format (e.g. for Gephi).
-
-        Args:
-            data (list): Scan result as list
-            columnNames (list[str]): column names
-            sheetNameIndex (int): TBD
-
-        Returns:
-            str: Excel workbook
-        """
-        rowNums: dict[str, int] = dict()
-        workbook = openpyxl.Workbook()
-        defaultSheet = workbook.active
-        columnNames.pop(sheetNameIndex)
-        allowed_sheet_chars = string.ascii_uppercase + string.digits + '_'
-        for row in data:
-            sheetName = "".join([c for c in str(row.pop(sheetNameIndex)) if c.upper() in allowed_sheet_chars])
-            try:
-                sheet = workbook[sheetName]
-            except KeyError:
-                # Create sheet
-                workbook.create_sheet(sheetName)
-                sheet = workbook[sheetName]
-                # Write headers
-                for col_num, column_title in enumerate(columnNames, 1):
-                    cell = sheet.cell(row=1, column=col_num)
-                    cell.value = column_title
-                rowNums[sheetName] = 2
-
-            # Write row
-            for col_num, cell_value in enumerate(row, 1):
-                cell = sheet.cell(row=rowNums[sheetName], column=col_num)
-                cell.value = cell_value
-
-            rowNums[sheetName] += 1
-
-        if rowNums:
-            workbook.remove(defaultSheet)
-
-        # Sort sheets alphabetically
-        workbook._sheets.sort(key=lambda ws: ws.title)
-
-        # Save workbook
-        with BytesIO() as f:
-            workbook.save(f)
-            f.seek(0)
-            return f.read()
-
     #
     # USER INTERFACE PAGES
     #
@@ -417,7 +368,7 @@ class SpiderFootWebUi:
             cherrypy.response.headers['Content-Disposition'] = f"attachment; filename={fname}"
             cherrypy.response.headers['Content-Type'] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             cherrypy.response.headers['Pragma'] = "no-cache"
-            return self.buildExcel(rows, headings, sheetNameIndex=0)
+            return buildExcel(rows, headings, sheetNameIndex=0)
 
         if filetype.lower() == 'csv':
             fileobj = StringIO()
@@ -472,7 +423,7 @@ class SpiderFootWebUi:
             cherrypy.response.headers['Content-Disposition'] = f"attachment; filename={fname}"
             cherrypy.response.headers['Content-Type'] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             cherrypy.response.headers['Pragma'] = "no-cache"
-            return self.buildExcel(rows, ["Updated", "Type", "Module", "Source",
+            return buildExcel(rows, ["Updated", "Type", "Module", "Source",
                                    "F/P", "Data"], sheetNameIndex=1)
 
         if filetype.lower() == 'csv':
@@ -539,7 +490,7 @@ class SpiderFootWebUi:
             cherrypy.response.headers['Content-Disposition'] = f"attachment; filename={fname}"
             cherrypy.response.headers['Content-Type'] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             cherrypy.response.headers['Pragma'] = "no-cache"
-            return self.buildExcel(rows, ["Scan Name", "Updated", "Type", "Module",
+            return buildExcel(rows, ["Scan Name", "Updated", "Type", "Module",
                                    "Source", "F/P", "Data"], sheetNameIndex=2)
 
         if filetype.lower() == 'csv':
@@ -595,7 +546,7 @@ class SpiderFootWebUi:
             cherrypy.response.headers['Content-Disposition'] = "attachment; filename=SpiderFoot.xlsx"
             cherrypy.response.headers['Content-Type'] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             cherrypy.response.headers['Pragma'] = "no-cache"
-            return self.buildExcel(rows, ["Updated", "Type", "Module", "Source",
+            return buildExcel(rows, ["Updated", "Type", "Module", "Source",
                                    "F/P", "Data"], sheetNameIndex=1)
 
         if filetype.lower() == 'csv':
@@ -1889,3 +1840,53 @@ class SpiderFootWebUi:
         retdata['data'] = datamap
 
         return retdata
+
+
+def buildExcel(data: list, columnNames: list[str], sheetNameIndex: int = 0) -> str:
+    """Convert supplied raw data into GEXF (Graph Exchange XML Format) format (e.g. for Gephi).
+    
+    Args:
+        data (list): Scan result as list
+        columnNames (list[str]): column names
+        sheetNameIndex (int): TBD
+    
+    Returns:
+        str: Excel workbook
+    """
+    rowNums: dict[str, int] = dict()
+    workbook = openpyxl.Workbook()
+    defaultSheet = workbook.active
+    columnNames.pop(sheetNameIndex)
+    allowed_sheet_chars = string.ascii_uppercase + string.digits + '_'
+    for row in data:
+        sheetName = "".join([c for c in str(row.pop(sheetNameIndex)) if c.upper() in allowed_sheet_chars])
+        try:
+            sheet = workbook[sheetName]
+        except KeyError:
+            # Create sheet
+            workbook.create_sheet(sheetName)
+            sheet = workbook[sheetName]
+            # Write headers
+            for col_num, column_title in enumerate(columnNames, 1):
+                cell = sheet.cell(row=1, column=col_num)
+                cell.value = column_title
+            rowNums[sheetName] = 2
+        
+        # Write row
+        for col_num, cell_value in enumerate(row, 1):
+            cell = sheet.cell(row=rowNums[sheetName], column=col_num)
+            cell.value = cell_value
+        
+        rowNums[sheetName] += 1
+    
+    if rowNums:
+        workbook.remove(defaultSheet)
+    
+    # Sort sheets alphabetically
+    workbook._sheets.sort(key=lambda ws: ws.title)
+    
+    # Save workbook
+    with BytesIO() as f:
+        workbook.save(f)
+        f.seek(0)
+        return f.read()
