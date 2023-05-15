@@ -56,7 +56,7 @@ class SpiderFootWebUi:
     token = None
     docroot = ''
 
-    def __init__(self: 'SpiderFootWebUi', web_config: dict, config: dict, loggingQueue: 'logging.handlers.QueueListener' | None = None) -> None:
+    def __init__(self, web_config: dict, config: dict, loggingQueue: 'logging.handlers.QueueListener' | None = None) -> None:
         """Initialize web server.
 
         Args:
@@ -125,7 +125,7 @@ class SpiderFootWebUi:
             "tools.response_headers.headers": secure_headers.framework.cherrypy()
         })
 
-    def error_page(self: 'SpiderFootWebUi') -> None:
+    def error_page(self) -> None:
         """Error page."""
         cherrypy.response.status = 500
 
@@ -134,7 +134,7 @@ class SpiderFootWebUi:
         else:
             cherrypy.response.body = b"<html><body>Error</body></html>"
 
-    def error_page_401(self: 'SpiderFootWebUi', status: str, message: str, traceback: str, version: str) -> str:
+    def error_page_401(self, status: str, message: str, traceback: str, version: str) -> str:
         """Unauthorized access HTTP 401 error page.
 
         Args:
@@ -148,7 +148,7 @@ class SpiderFootWebUi:
         """
         return ""
 
-    def error_page_404(self: 'SpiderFootWebUi', status: str, message: str, traceback: str, version: str) -> str:
+    def error_page_404(self, status: str, message: str, traceback: str, version: str) -> str:
         """Not found error page 404.
 
         Args:
@@ -163,7 +163,7 @@ class SpiderFootWebUi:
         templ = Template(filename='spiderfoot/templates/error.tmpl', lookup=self.lookup)
         return templ.render(message='Not Found', docroot=self.docroot, status=status, version=__version__)
 
-    def jsonify_error(self: 'SpiderFootWebUi', status: str, message: str) -> dict:
+    def jsonify_error(self, status: str, message: str) -> dict:
         """Jsonify error response.
 
         Args:
@@ -182,7 +182,7 @@ class SpiderFootWebUi:
             }
         }
 
-    def error(self: 'SpiderFootWebUi', message: str) -> str:
+    def error(self, message: str) -> str:
         """Show generic error page with error message.
 
         Args:
@@ -197,7 +197,7 @@ class SpiderFootWebUi:
             return output.decode()
         return output
 
-    def cleanUserInput(self: 'SpiderFootWebUi', inputList: list[str]) -> list[str]:
+    def cleanUserInput(self, inputList: list[str]) -> list[str]:
         """Convert data to HTML entities; except quotes and ampersands.
 
         Args:
@@ -230,7 +230,7 @@ class SpiderFootWebUi:
 
         return ret
 
-    def searchBase(self: 'SpiderFootWebUi', id: str | None = None, eventType: str | None = None, value: str | None = None) -> list:
+    def searchBase(self, id: str | None = None, eventType: str | None = None, value: str | None = None) -> list:
         """Search.
 
         Args:
@@ -282,7 +282,7 @@ class SpiderFootWebUi:
 
         return retdata
 
-    def buildExcel(self: 'SpiderFootWebUi', data: list, columnNames: list[str], sheetNameIndex: int = 0) -> str:
+    def buildExcel(self, data: list, columnNames: list[str], sheetNameIndex: int = 0) -> str:
         """Convert supplied raw data into GEXF (Graph Exchange XML Format) format (e.g. for Gephi).
 
         Args:
@@ -336,7 +336,7 @@ class SpiderFootWebUi:
     #
 
     @cherrypy.expose
-    def scanexportlogs(self: 'SpiderFootWebUi', id: str, dialect: str = "excel") -> bytes:
+    def scanexportlogs(self, id: str, dialect: str = "excel") -> bytes:
         """Get scan log
 
         Args:
@@ -374,7 +374,7 @@ class SpiderFootWebUi:
         return fileobj.getvalue().encode('utf-8')
 
     @cherrypy.expose
-    def scancorrelationsexport(self: 'SpiderFootWebUi', id: str, filetype: str = "csv", dialect: str = "excel") -> str:
+    def scancorrelationsexport(self, id: str, filetype: str = "csv", dialect: str = "excel") -> str:
         """Get scan correlation data in CSV or Excel format.
 
         Args:
@@ -444,7 +444,7 @@ class SpiderFootWebUi:
         return self.error("Invalid export filetype.")
 
     @cherrypy.expose
-    def scaneventresultexport(self: 'SpiderFootWebUi', id: str, type: str, filetype: str = "csv", dialect: str = "excel") -> str:
+    def scaneventresultexport(self, id: str, type: str, filetype: str = "csv", dialect: str = "excel") -> str:
         """Get scan event result data in CSV or Excel format
 
         Args:
@@ -495,7 +495,7 @@ class SpiderFootWebUi:
         return self.error("Invalid export filetype.")
 
     @cherrypy.expose
-    def scaneventresultexportmulti(self: 'SpiderFootWebUi', ids: str, filetype: str = "csv", dialect: str = "excel") -> str:
+    def scaneventresultexportmulti(self, ids: str, filetype: str = "csv", dialect: str = "excel") -> str:
         """Get scan event result data in CSV or Excel format for multiple scans
 
         Args:
@@ -567,7 +567,7 @@ class SpiderFootWebUi:
         return self.error("Invalid export filetype.")
 
     @cherrypy.expose
-    def scansearchresultexport(self: 'SpiderFootWebUi', id: str, eventType: str | None = None, value: str | None = None, filetype: str = "csv", dialect: str = "excel") -> str:
+    def scansearchresultexport(self, id: str, eventType: str | None = None, value: str | None = None, filetype: str = "csv", dialect: str = "excel") -> str:
         """Get search result data in CSV or Excel format
 
         Args:
@@ -615,7 +615,7 @@ class SpiderFootWebUi:
         return self.error("Invalid export filetype.")
 
     @cherrypy.expose
-    def scanexportjsonmulti(self: 'SpiderFootWebUi', ids: str) -> str:
+    def scanexportjsonmulti(self, ids: str) -> str:
         """Get scan event result data in JSON format for multiple scans.
 
         Args:
@@ -669,7 +669,7 @@ class SpiderFootWebUi:
         return json.dumps(scaninfo).encode('utf-8')
 
     @cherrypy.expose
-    def scanviz(self: 'SpiderFootWebUi', id: str, gexf: str = "0") -> str:
+    def scanviz(self, id: str, gexf: str = "0") -> str:
         """Export entities from scan results for visualising.
 
         Args:
@@ -707,7 +707,7 @@ class SpiderFootWebUi:
         return SpiderFootHelpers.buildGraphGexf([root], "SpiderFoot Export", data)
 
     @cherrypy.expose
-    def scanvizmulti(self: 'SpiderFootWebUi', ids: str, gexf: str = "1") -> str:
+    def scanvizmulti(self, ids: str, gexf: str = "1") -> str:
         """Export entities results from multiple scans in GEXF format.
 
         Args:
@@ -752,7 +752,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def scanopts(self: 'SpiderFootWebUi', id: str) -> dict:
+    def scanopts(self, id: str) -> dict:
         """Return configuration used for the specified scan as JSON.
 
         Args:
@@ -799,7 +799,7 @@ class SpiderFootWebUi:
         return ret
 
     @cherrypy.expose
-    def rerunscan(self: 'SpiderFootWebUi', id: str) -> None:
+    def rerunscan(self, id: str) -> None:
         """Rerun a scan.
 
         Args:
@@ -859,7 +859,7 @@ class SpiderFootWebUi:
         raise cherrypy.HTTPRedirect(f"{self.docroot}/scaninfo?id={scanId}", status=302)
 
     @cherrypy.expose
-    def rerunscanmulti(self: 'SpiderFootWebUi', ids: str) -> str:
+    def rerunscanmulti(self, ids: str) -> str:
         """Rerun scans.
 
         Args:
@@ -914,7 +914,7 @@ class SpiderFootWebUi:
         return templ.render(rerunscans=True, docroot=self.docroot, pageid="SCANLIST", version=__version__)
 
     @cherrypy.expose
-    def newscan(self: 'SpiderFootWebUi') -> str:
+    def newscan(self) -> str:
         """Configure a new scan.
 
         Returns:
@@ -928,7 +928,7 @@ class SpiderFootWebUi:
                             selectedmods="", scantarget="", version=__version__)
 
     @cherrypy.expose
-    def clonescan(self: 'SpiderFootWebUi', id: str) -> str:
+    def clonescan(self, id: str) -> str:
         """Clone an existing scan (pre-selected options in the newscan page).
 
         Args:
@@ -966,7 +966,7 @@ class SpiderFootWebUi:
                             scantarget=str(scantarget), version=__version__)
 
     @cherrypy.expose
-    def index(self: 'SpiderFootWebUi') -> str:
+    def index(self) -> str:
         """Show scan list page.
 
         Returns:
@@ -976,7 +976,7 @@ class SpiderFootWebUi:
         return templ.render(pageid='SCANLIST', docroot=self.docroot, version=__version__)
 
     @cherrypy.expose
-    def scaninfo(self: 'SpiderFootWebUi', id: str) -> str:
+    def scaninfo(self, id: str) -> str:
         """Information about a selected scan.
 
         Args:
@@ -995,7 +995,7 @@ class SpiderFootWebUi:
                             pageid="SCANLIST")
 
     @cherrypy.expose
-    def opts(self: 'SpiderFootWebUi', updated: str | None = None) -> str:
+    def opts(self, updated: str | None = None) -> str:
         """Show module and global settings page.
 
         Args:
@@ -1010,7 +1010,7 @@ class SpiderFootWebUi:
                             updated=updated, docroot=self.docroot)
 
     @cherrypy.expose
-    def optsexport(self: 'SpiderFootWebUi', pattern: str | None = None) -> str:
+    def optsexport(self, pattern: str | None = None) -> str:
         """Export configuration.
 
         Args:
@@ -1039,7 +1039,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def optsraw(self: 'SpiderFootWebUi') -> str:
+    def optsraw(self) -> str:
         """Return global and module settings as json.
 
         Returns:
@@ -1063,7 +1063,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def scandelete(self: 'SpiderFootWebUi', id: str) -> str:
+    def scandelete(self, id: str) -> str:
         """Delete scan(s).
 
         Args:
@@ -1092,7 +1092,7 @@ class SpiderFootWebUi:
         return ""
 
     @cherrypy.expose
-    def savesettings(self: 'SpiderFootWebUi', allopts: str, token: str, configFile: 'cherrypy._cpreqbody.Part' | None = None) -> None:
+    def savesettings(self, allopts: str, token: str, configFile: 'cherrypy._cpreqbody.Part' | None = None) -> None:
         """Save settings, also used to completely reset them to default.
 
         Args:
@@ -1159,7 +1159,7 @@ class SpiderFootWebUi:
         raise cherrypy.HTTPRedirect(f"{self.docroot}/opts?updated=1")
 
     @cherrypy.expose
-    def savesettingsraw(self: 'SpiderFootWebUi', allopts: str, token: str) -> str:
+    def savesettingsraw(self, allopts: str, token: str) -> str:
         """Save settings, also used to completely reset them to default.
 
         Args:
@@ -1200,7 +1200,7 @@ class SpiderFootWebUi:
 
         return json.dumps(["SUCCESS", ""]).encode('utf-8')
 
-    def reset_settings(self: 'SpiderFootWebUi') -> bool:
+    def reset_settings(self) -> bool:
         """Reset settings to default.
 
         Returns:
@@ -1216,7 +1216,7 @@ class SpiderFootWebUi:
         return True
 
     @cherrypy.expose
-    def resultsetfp(self: 'SpiderFootWebUi', id: str, resultids: str, fp: str) -> str:
+    def resultsetfp(self, id: str, resultids: str, fp: str) -> str:
         """Set a bunch of results (hashes) as false positive.
 
         Args:
@@ -1273,7 +1273,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def eventtypes(self: 'SpiderFootWebUi') -> list:
+    def eventtypes(self) -> list:
         """List all event types.
 
         Returns:
@@ -1292,7 +1292,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def modules(self: 'SpiderFootWebUi') -> list:
+    def modules(self) -> list:
         """List all modules.
 
         Returns:
@@ -1317,7 +1317,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def correlationrules(self: 'SpiderFootWebUi') -> list:
+    def correlationrules(self) -> list:
         """List all correlation rules.
 
         Returns:
@@ -1343,7 +1343,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def ping(self: 'SpiderFootWebUi') -> list[str]:
+    def ping(self) -> list[str]:
         """For the CLI to test connectivity to this server.
 
         Returns:
@@ -1353,7 +1353,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def query(self: 'SpiderFootWebUi', query: str) -> str:
+    def query(self, query: str) -> str:
         """For the CLI to run queries against the database.
 
         Args:
@@ -1379,7 +1379,7 @@ class SpiderFootWebUi:
             return self.jsonify_error('500', str(e))
 
     @cherrypy.expose
-    def startscan(self: 'SpiderFootWebUi', scanname: str, scantarget: str, modulelist: str, typelist: str, usecase: str) -> str:
+    def startscan(self, scanname: str, scantarget: str, modulelist: str, typelist: str, usecase: str) -> str:
         """Initiate a scan.
 
         Args:
@@ -1513,7 +1513,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def stopscan(self: 'SpiderFootWebUi', id: str) -> str:
+    def stopscan(self, id: str) -> str:
         """Stop a scan.
 
         Args:
@@ -1566,7 +1566,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def scanlog(self: 'SpiderFootWebUi', id: str, limit: str | None = None, rowId: str | None = None, reverse: str | None = None) -> list:
+    def scanlog(self, id: str, limit: str | None = None, rowId: str | None = None, reverse: str | None = None) -> list:
         """Scan log data.
 
         Args:
@@ -1594,7 +1594,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def scanerrors(self: 'SpiderFootWebUi', id: str, limit: str | None = None) -> list:
+    def scanerrors(self, id: str, limit: str | None = None) -> list:
         """Scan error data.
 
         Args:
@@ -1620,7 +1620,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def scanlist(self: 'SpiderFootWebUi') -> list:
+    def scanlist(self) -> list:
         """Produce a list of scans.
 
         Returns:
@@ -1659,7 +1659,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def scanstatus(self: 'SpiderFootWebUi', id: str) -> list:
+    def scanstatus(self, id: str) -> list:
         """Show basic information about a scan, including status and number of each event type.
 
         Args:
@@ -1692,7 +1692,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def scansummary(self: 'SpiderFootWebUi', id: str, by: str) -> list:
+    def scansummary(self, id: str, by: str) -> list:
         """Summary of scan results.
 
         Args:
@@ -1726,7 +1726,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def scancorrelations(self: 'SpiderFootWebUi', id: str) -> list:
+    def scancorrelations(self, id: str) -> list:
         """Correlation results from a scan.
 
         Args:
@@ -1751,7 +1751,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def scaneventresults(self: 'SpiderFootWebUi', id: str, eventType: str | None = None, filterfp: bool = False, correlationId: str = None) -> list:
+    def scaneventresults(self, id: str, eventType: str | None = None, filterfp: bool = False, correlationId: str = None) -> list:
         """Return all event results for a scan as JSON.
 
         Args:
@@ -1795,7 +1795,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def scaneventresultsunique(self: 'SpiderFootWebUi', id: str, eventType: str, filterfp: bool = False) -> list:
+    def scaneventresultsunique(self, id: str, eventType: str, filterfp: bool = False) -> list:
         """Return unique event results for a scan as JSON.
 
         Args:
@@ -1822,7 +1822,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def search(self: 'SpiderFootWebUi', id: str | None = None, eventType: str | None = None, value: str | None = None) -> list:
+    def search(self, id: str | None = None, eventType: str | None = None, value: str | None = None) -> list:
         """Search scans.
 
         Args:
@@ -1840,7 +1840,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def scanhistory(self: 'SpiderFootWebUi', id: str) -> list:
+    def scanhistory(self, id: str) -> list:
         """Historical data for a scan.
 
         Args:
@@ -1861,7 +1861,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def scanelementtypediscovery(self: 'SpiderFootWebUi', id: str, eventType: str) -> dict:
+    def scanelementtypediscovery(self, id: str, eventType: str) -> dict:
         """Scan element type discovery.
 
         Args:
