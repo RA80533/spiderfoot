@@ -51,7 +51,7 @@ class SpiderFootDb:
             val     VARCHAR NOT NULL, \
             PRIMARY KEY (scope, opt) \
         )",
-        "CREATE TABLE tbl_scan_instance ( \
+        "CREATE TABLE tbl_scan_instances ( \
             guid        VARCHAR NOT NULL PRIMARY KEY, \
             name        VARCHAR NOT NULL, \
             seed_target VARCHAR NOT NULL, \
@@ -61,20 +61,20 @@ class SpiderFootDb:
             status      VARCHAR NOT NULL \
         )",
         "CREATE TABLE tbl_scan_log ( \
-            scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instance(guid), \
+            scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
             generated           INT NOT NULL, \
             component           VARCHAR, \
             type                VARCHAR NOT NULL, \
             message             VARCHAR \
         )",
         "CREATE TABLE tbl_scan_config ( \
-            scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instance(guid), \
+            scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
             component           VARCHAR NOT NULL, \
             opt                 VARCHAR NOT NULL, \
             val                 VARCHAR NOT NULL \
         )",
         "CREATE TABLE tbl_scan_results ( \
-            scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instance(guid), \
+            scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
             hash                VARCHAR NOT NULL, \
             type                VARCHAR NOT NULL REFERENCES tbl_event_types(event), \
             generated           INT NOT NULL, \
@@ -88,7 +88,7 @@ class SpiderFootDb:
         )",
         "CREATE TABLE tbl_scan_correlation_results ( \
             id                  VARCHAR NOT NULL PRIMARY KEY, \
-            scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instance(guid), \
+            scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
             title               VARCHAR NOT NULL, \
             rule_risk           VARCHAR NOT NULL, \
             rule_id             VARCHAR NOT NULL, \
@@ -621,7 +621,7 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        qry = "INSERT INTO tbl_scan_instance \
+        qry = "INSERT INTO tbl_scan_instances \
             (guid, name, seed_target, created, status) \
             VALUES (?, ?, ?, ?, ?)"
 
@@ -649,7 +649,7 @@ class SpiderFootDb:
         """
 
         qvars = list()
-        qry = "UPDATE tbl_scan_instance SET "
+        qry = "UPDATE tbl_scan_instances SET "
 
         if started is not None:
             qry += " started = ?,"
@@ -690,7 +690,7 @@ class SpiderFootDb:
 
         qry = "SELECT name, seed_target, ROUND(created/1000) AS created, \
             ROUND(started/1000) AS started, ROUND(ended/1000) AS ended, status \
-            FROM tbl_scan_instance WHERE guid = ?"
+            FROM tbl_scan_instances WHERE guid = ?"
         qvars = [instanceId]
 
         with self.dbhLock:
@@ -1035,7 +1035,7 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        qry1 = "DELETE FROM tbl_scan_instance WHERE guid = ?"
+        qry1 = "DELETE FROM tbl_scan_instances WHERE guid = ?"
         qry2 = "DELETE FROM tbl_scan_config WHERE scan_instance_id = ?"
         qry3 = "DELETE FROM tbl_scan_results WHERE scan_instance_id = ?"
         qry4 = "DELETE FROM tbl_scan_log WHERE scan_instance_id = ?"
@@ -1331,12 +1331,12 @@ class SpiderFootDb:
         # get a complete listing.
         qry = "SELECT i.guid, i.name, i.seed_target, ROUND(i.created/1000), \
             ROUND(i.started)/1000 as started, ROUND(i.ended)/1000, i.status, COUNT(r.type) \
-            FROM tbl_scan_instance i, tbl_scan_results r WHERE i.guid = r.scan_instance_id \
+            FROM tbl_scan_instances i, tbl_scan_results r WHERE i.guid = r.scan_instance_id \
             AND r.type <> 'ROOT' GROUP BY i.guid \
             UNION ALL \
             SELECT i.guid, i.name, i.seed_target, ROUND(i.created/1000), \
             ROUND(i.started)/1000 as started, ROUND(i.ended)/1000, i.status, '0' \
-            FROM tbl_scan_instance i  WHERE i.guid NOT IN ( \
+            FROM tbl_scan_instances i  WHERE i.guid NOT IN ( \
             SELECT distinct scan_instance_id FROM tbl_scan_results WHERE type <> 'ROOT') \
             ORDER BY started DESC"
 
