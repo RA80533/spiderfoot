@@ -296,7 +296,6 @@ class SpiderFootDb:
                          if the database file does not exist this option will be ignored.
 
         Raises:
-            TypeError: arg type was invalid
             ValueError: arg value was invalid
             IOError: database I/O failed
         """
@@ -581,7 +580,6 @@ class SpiderFootDb:
             component (str): TBD
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
 
         Todo:
@@ -617,7 +615,6 @@ class SpiderFootDb:
             scanTarget (str): scan target
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
         """
 
@@ -644,7 +641,6 @@ class SpiderFootDb:
             status (str): scan status
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
         """
 
@@ -684,7 +680,6 @@ class SpiderFootDb:
             list: scan instance info
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
         """
 
@@ -711,7 +706,6 @@ class SpiderFootDb:
             list: scan instance info
 
         Raises:
-            TypeError: arg type was invalid
             ValueError: arg value was invalid
             IOError: database I/O failed
         """
@@ -759,7 +753,6 @@ class SpiderFootDb:
             list: scan correlation summary
 
         Raises:
-            TypeError: arg type was invalid
             ValueError: arg value was invalid
             IOError: database I/O failed
         """
@@ -797,7 +790,6 @@ class SpiderFootDb:
             list: scan correlation list
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
         """
 
@@ -923,7 +915,6 @@ class SpiderFootDb:
             list: unique scan results
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
         """
 
@@ -960,7 +951,6 @@ class SpiderFootDb:
             list: scan logs
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
         """
 
@@ -1001,7 +991,6 @@ class SpiderFootDb:
             list: scan errors
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
         """
 
@@ -1031,7 +1020,6 @@ class SpiderFootDb:
             bool: success
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
         """
 
@@ -1065,7 +1053,6 @@ class SpiderFootDb:
             bool: success
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
         """
 
@@ -1096,7 +1083,6 @@ class SpiderFootDb:
             bool: success
 
         Raises:
-            TypeError: arg type was invalid
             ValueError: arg value was invalid
             IOError: database I/O failed
         """
@@ -1223,7 +1209,6 @@ class SpiderFootDb:
             dict: configuration data
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
         """
 
@@ -1357,7 +1342,6 @@ class SpiderFootDb:
             list: scan data history
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
         """
 
@@ -1384,7 +1368,6 @@ class SpiderFootDb:
             list: TBD
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
         """
 
@@ -1429,7 +1412,6 @@ class SpiderFootDb:
             list: TBD
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
         """
 
@@ -1472,7 +1454,6 @@ class SpiderFootDb:
             list: TBD
 
         Raises:
-            TypeError: arg type was invalid
             ValueError: arg value was invalid
         """
 
@@ -1536,9 +1517,6 @@ class SpiderFootDb:
         Returns:
             list: TBD
 
-        Raises:
-            TypeError: arg type was invalid
-
         Note: This function is not the same as the scanElementParent* functions.
               This function returns only ids.
         """
@@ -1592,7 +1570,6 @@ class SpiderFootDb:
             eventHashes(list): events mapped to the correlation result
 
         Raises:
-            TypeError: arg type was invalid
             IOError: database I/O failed
 
         Returns:
