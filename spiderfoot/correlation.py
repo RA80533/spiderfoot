@@ -57,19 +57,9 @@ class SpiderFootCorrelator:
             scanId (str): scan instance ID
 
         Raises:
-            TypeError: argument type was invalid
             SyntaxError: correlation ruleset contains malformed or invalid rule
         """
-        if not isinstance(ruleset, dict):
-            raise TypeError(f"ruleset is {type(ruleset)}; expected dict()")
-
-        if not isinstance(dbh, SpiderFootDb):
-            raise TypeError(f"dbh is {type(dbh)}; expected SpiderFootDb()")
-
         self.dbh = dbh
-
-        if scanId and not isinstance(scanId, str):
-            raise TypeError(f"scanId is {type(scanId)}; expected str()")
 
         self.scanId = scanId
 
@@ -140,13 +130,7 @@ class SpiderFootCorrelator:
 
         Returns:
             dict: criteria to be used with SpiderFootDb.scanResultEvent()
-
-        Raises:
-            TypeError: argument type was invalid
         """
-        if not isinstance(matchrule, dict):
-            raise TypeError(f"matchrule is {type(matchrule)}; expected dict()")
-
         criterias = dict()
 
         if "." in matchrule['field']:
@@ -222,13 +206,7 @@ class SpiderFootCorrelator:
 
         Args:
             events (dict): events
-
-        Raises:
-            TypeError: argument type was invalid
         """
-        if not isinstance(events, dict):
-            raise TypeError(f"events is {type(events)}; expected dict()")
-
         event_chunks = [list(events.keys())[x:(x + 5000)] for x in range(0, len(list(events.keys())), 5000)]
 
         for chunk in event_chunks:
@@ -249,13 +227,7 @@ class SpiderFootCorrelator:
 
         Args:
             events (dict): events
-
-        Raises:
-            TypeError: argument type was invalid
         """
-        if not isinstance(events, dict):
-            raise TypeError(f"events is {type(events)}; expected dict()")
-
         event_chunks = [list(events.keys())[x:x + 5000] for x in range(0, len(list(events.keys())), 5000)]
 
         for chunk in event_chunks:
@@ -277,13 +249,7 @@ class SpiderFootCorrelator:
 
         Args:
             events (dict): events
-
-        Raises:
-            TypeError: argument type was invalid
         """
-        if not isinstance(events, dict):
-            raise TypeError(f"events is {type(events)}; expected dict()")
-
         entity_missing = dict()
         for event_id in events:
             if 'source' not in events[event_id]:
@@ -850,13 +816,7 @@ class SpiderFootCorrelator:
 
         Returns:
             list: TBD
-
-        Raises:
-            TypeError: argument type was invalid
         """
-        if not isinstance(rule, dict):
-            raise TypeError(f"rule is {type(rule)}; expected dict()")
-
         events = list()
         buckets = dict()
 
@@ -905,16 +865,7 @@ class SpiderFootCorrelator:
 
         Returns:
             str: correlation rule title
-
-        Raises:
-            TypeError: argument type was invalid
         """
-        if not isinstance(rule, dict):
-            raise TypeError(f"rule is {type(rule)}; expected dict()")
-
-        if not isinstance(data, list):
-            raise TypeError(f"data is {type(data)}; expected list()")
-
         title = rule['headline']
         if isinstance(title, dict):
             title = title['text']
@@ -972,9 +923,6 @@ class SpiderFootCorrelator:
         Returns:
             bool: correlation rule set is valid
         """
-        if not isinstance(rules, list):
-            return False
-
         ok = True
         for rule in rules:
             if not self.check_rule_validity(rule):
@@ -993,9 +941,6 @@ class SpiderFootCorrelator:
         Returns:
             bool: correlation rule is valid
         """
-        if not isinstance(rule, dict):
-            return False
-
         fields = set(rule.keys())
 
         if not fields:
