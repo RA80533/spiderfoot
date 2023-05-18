@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import logging
-from copy import deepcopy
 import re
-import netaddr
 import yaml
+from copy import deepcopy
+
+import netaddr
+
 from spiderfoot import SpiderFootDb
 
 
