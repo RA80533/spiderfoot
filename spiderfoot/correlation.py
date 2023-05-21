@@ -357,59 +357,6 @@ class SpiderFootCorrelator:
         self.log.debug(f"returning {len(events.values())} events from match_rule {matchrule}")
         return list(events.values())
 
-    def event_keep(self, event: dict, field: str, patterns: str, patterntype: str) -> bool:
-        """Keep event field.
-
-        Args:
-            event (dict): event
-            field (str): TBD
-            patterns (str): TBD
-            patterntype (str): TBD
-
-        Returns:
-            bool: TBD
-        """
-
-        if "." in field:
-            key, field = field.split(".")
-            return any(self.event_keep(subevent, field, patterns, patterntype) for subevent in event[key])
-
-        value = event[field]
-
-        if patterntype == "exact":
-            ret = False
-            for pattern in patterns:
-                if pattern.startswith("not "):
-                    ret = True
-                    pattern = re.sub(r"^not\s+", "", pattern)
-                    if value == pattern:
-                        return False
-                else:
-                    ret = False
-                    if value == pattern:
-                        return True
-            if ret:
-                return True
-            return False
-
-        if patterntype == "regex":
-            ret = False
-            for pattern in patterns:
-                if pattern.startswith("not "):
-                    ret = True
-                    pattern = re.sub(r"^not\s+", "", pattern)
-                    if re.search(pattern, value, re.IGNORECASE):
-                        return False
-                else:
-                    ret = False
-                    if re.search(pattern, value, re.IGNORECASE):
-                        return True
-            if ret:
-                return True
-            return False
-
-        return False
-
     def refine_collection(self, matchrule: dict, events: list) -> None:
         """Cull events from the events list if they don't meet the match criteria.
 
@@ -431,7 +378,7 @@ class SpiderFootCorrelator:
         # Go through each event, remove it if we shouldn't keep it
         # according to the match rule patterns.
         for event in events[:]:
-            if not self.event_keep(event, field, patterns, matchrule['method']):
+            if not event_keep(event, field, patterns, matchrule['method']):
                 self.log.debug(f"removing {event} because of {field}")
                 events.remove(event)
 
@@ -1023,3 +970,57 @@ def event_extract(event: dict, field: str) -> list:
         return ret
 
     return [event[field]]
+
+
+def event_keep(event: dict, field: str, patterns: str, patterntype: str) -> bool:
+    """Keep event field.
+
+    Args:
+        event (dict): event
+        field (str): TBD
+        patterns (str): TBD
+        patterntype (str): TBD
+
+    Returns:
+        bool: TBD
+    """
+
+    if "." in field:
+        key, field = field.split(".")
+        return any(event_keep(subevent, field, patterns, patterntype) for subevent in event[key])
+
+    value = event[field]
+
+    if patterntype == "exact":
+        ret = False
+        for pattern in patterns:
+            if pattern.startswith("not "):
+                ret = True
+                pattern = re.sub(r"^not\s+", "", pattern)
+                if value == pattern:
+                    return False
+            else:
+                ret = False
+                if value == pattern:
+                    return True
+        if ret:
+            return True
+        return False
+
+    if patterntype == "regex":
+        ret = False
+        for pattern in patterns:
+            if pattern.startswith("not "):
+                ret = True
+                pattern = re.sub(r"^not\s+", "", pattern)
+                if re.search(pattern, value, re.IGNORECASE):
+                    return False
+            else:
+                ret = False
+                if re.search(pattern, value, re.IGNORECASE):
+                    return True
+        if ret:
+            return True
+        return False
+
+    return False
