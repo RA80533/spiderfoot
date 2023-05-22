@@ -9,6 +9,15 @@ import netaddr
 
 from spiderfoot import SpiderFootDb
 
+from .correlation_rule import _Aggregation
+from .correlation_rule import _AnalysisItem
+from .correlation_rule import _AnalysisItem_FirstCollectionOnly
+from .correlation_rule import _AnalysisItem_MatchAllToFirstCollection
+from .correlation_rule import _AnalysisItem_Outlier
+from .correlation_rule import _AnalysisItem_Threshold
+from .correlation_rule import Matchrule
+from .correlation_rule import Rule
+
 
 class SpiderFootCorrelator:
     """SpiderFoot correlation capabilities.
@@ -21,7 +30,8 @@ class SpiderFootCorrelator:
     dbh = None
     scanId = None
     types = None
-    rules = list()
+    rules: list[Rule] = list()
+    raw_ruleset: dict[str, str] = dict()
     type_entity_map = dict()
 
     # For syntax checking
@@ -50,7 +60,7 @@ class SpiderFootCorrelator:
         "rawYaml": {}
     }
 
-    def __init__(self, dbh: SpiderFootDb, ruleset: dict, scanId: str = None) -> None:
+    def __init__(self, dbh: SpiderFootDb, ruleset: dict[str, str], scanId: str = None) -> None:
         """Initialize SpiderFoot correlator engine with scan ID and ruleset.
 
         Args:
@@ -70,28 +80,28 @@ class SpiderFootCorrelator:
             self.type_entity_map[t[1]] = t[3]
 
         self.rules = list()
+        self.raw_ruleset = ruleset
 
         # Sanity-check the rules
         for rule_id in ruleset.keys():
             self.log.debug(f"Parsing rule {rule_id}...")
             try:
                 self.rules.append(yaml.safe_load(ruleset[rule_id]))
-                self.rules[len(self.rules) - 1]['rawYaml'] = ruleset[rule_id]
             except Exception as e:
                 raise SyntaxError(f"Unable to process a YAML correlation rule [{rule_id}]") from e
 
         # Strip any trailing newlines that may have creeped into meta name/description
         for rule in self.rules:
-            for k in rule['meta'].keys():
-                if isinstance(rule['meta'][k], str):
-                    rule['meta'][k] = rule['meta'][k].strip()
+            for k in rule.meta.__dataclass_fields__.keys():
+                if isinstance(rule.meta[k], str):
+                    rule.meta[k] = rule.meta[k].strip()
                 else:
-                    rule['meta'][k] = rule[k]
+                    rule.meta[k] = rule[k]
 
         if not self.check_ruleset_validity(self.rules):
             raise SyntaxError("Sanity check of correlation rules failed.")
 
-    def get_ruleset(self) -> list:
+    def get_ruleset(self) -> list[Rule]:
         """Correlation rule set.
 
         Returns:
@@ -113,18 +123,18 @@ class SpiderFootCorrelator:
             raise ValueError(f"Scan {self.scanId} is {scan_instance[5]}. You cannot run correlations on running scans.")
 
         for rule in self.rules:
-            self.log.debug(f"Processing rule: {rule['id']}")
+            self.log.debug(f"Processing rule: {rule.id}")
             results = self.process_rule(rule)
             if not results:
-                self.log.debug(f"No results for rule {rule['id']}.")
+                self.log.debug(f"No results for rule {rule.id}.")
                 continue
 
-            self.log.info(f"Rule {rule['id']} returned {len(results.keys())} results.")
+            self.log.info(f"Rule {rule.id} returned {len(results.keys())} results.")
 
             for result in results:
                 self.create_correlation(rule, results[result])
 
-    def build_db_criteria(self, matchrule: dict) -> dict:
+    def build_db_criteria(self, matchrule: Matchrule) -> dict:
         """Build up the criteria to be used to query the database.
 
         Args:
@@ -135,39 +145,39 @@ class SpiderFootCorrelator:
         """
         criterias = dict()
 
-        if "." in matchrule['field']:
+        if "." in matchrule.field:
             self.log.error("The first collection must either be data, type or module.")
             return None
 
-        if matchrule['field'] == "data" and matchrule['type'] == "regex":
+        if matchrule.field == "data" and matchrule.type == "regex":
             self.log.error("The first collection cannot use regex on data.")
             return None
 
-        if matchrule['field'] == "module" and matchrule['method'] != 'exact':
+        if matchrule.field == "module" and matchrule.method != 'exact':
             self.log.error("Collection based on module names doesn't support regex.")
             return None
 
         # Build up the event type part of the query
-        if matchrule['field'] == "type":
+        if matchrule.field == "type":
             if 'eventType' not in criterias:
                 criterias['eventType'] = list()
 
-            if matchrule['method'] == 'regex':
-                if type(matchrule['value']) != list:
-                    regexps = [matchrule['value']]
+            if matchrule.method == 'regex':
+                if type(matchrule.value) != list:
+                    regexps = [matchrule.value]
                 else:
-                    regexps = matchrule['value']
+                    regexps = matchrule.value
 
                 for r in regexps:
                     for t in self.types:
                         if re.search(r, t[1]):
                             criterias['eventType'].append(t[1])
 
-            if matchrule['method'] == 'exact':
-                if type(matchrule['value']) != list:
-                    matches = [matchrule['value']]
+            if matchrule.method == 'exact':
+                if type(matchrule.value) != list:
+                    matches = [matchrule.value]
                 else:
-                    matches = matchrule['value']
+                    matches = matchrule.value
 
                 for m in matches:
                     matched = False
@@ -180,26 +190,26 @@ class SpiderFootCorrelator:
                         return None
 
         # Match by module(s)
-        if matchrule['field'] == "module":
+        if matchrule.field == "module":
             if 'srcModule' not in criterias:
                 criterias['srcModule'] = list()
 
-            if matchrule['method'] == 'exact':
-                if isinstance(matchrule['value'], list):
-                    criterias['srcModule'].extend(matchrule['value'])
+            if matchrule.method == 'exact':
+                if isinstance(matchrule.value, list):
+                    criterias['srcModule'].extend(matchrule.value)
                 else:
-                    criterias['srcModule'].append(matchrule['value'])
+                    criterias['srcModule'].append(matchrule.value)
 
         # Match by data
-        if matchrule['field'] == "data":
+        if matchrule.field == "data":
             if 'data' not in criterias:
                 criterias['data'] = list()
 
-            if isinstance(matchrule['value'], list):
-                for v in matchrule['value']:
+            if isinstance(matchrule.value, list):
+                for v in matchrule.value:
                     criterias['data'].append(v.encode('raw_unicode_escape'))
             else:
-                criterias['data'].append(matchrule['value'].encode('raw_unicode_escape'))
+                criterias['data'].append(matchrule.value.encode('raw_unicode_escape'))
 
         return criterias
 
@@ -307,7 +317,7 @@ class SpiderFootCorrelator:
 
             entity_missing = deepcopy(new_missing)
 
-    def collect_from_db(self, matchrule: dict, fetchChildren: bool, fetchSources: bool, fetchEntities: bool) -> list:
+    def collect_from_db(self, matchrule: Matchrule, fetchChildren: bool, fetchSources: bool, fetchEntities: bool) -> list:
         """Collect event values from database.
 
         Args:
@@ -357,7 +367,7 @@ class SpiderFootCorrelator:
         self.log.debug(f"returning {len(events.values())} events from match_rule {matchrule}")
         return list(events.values())
 
-    def refine_collection(self, matchrule: dict, events: list) -> None:
+    def refine_collection(self, matchrule: Matchrule, events: list) -> None:
         """Cull events from the events list if they don't meet the match criteria.
 
         Args:
@@ -366,23 +376,23 @@ class SpiderFootCorrelator:
         """
         patterns = list()
 
-        if isinstance(matchrule['value'], list):
-            for r in matchrule['value']:
+        if isinstance(matchrule.value, list):
+            for r in matchrule.value:
                 patterns.append(str(r))
         else:
-            patterns = [str(matchrule['value'])]
+            patterns = [str(matchrule.value)]
 
-        field = matchrule['field']
+        field = matchrule.field
         self.log.debug(f"attempting to match {patterns} against the {field} field in {len(events)} events")
 
         # Go through each event, remove it if we shouldn't keep it
         # according to the match rule patterns.
         for event in events[:]:
-            if not event_keep(event, field, patterns, matchrule['method']):
+            if not event_keep(event, field, patterns, matchrule.method):
                 self.log.debug(f"removing {event} because of {field}")
                 events.remove(event)
 
-    def collect_events(self, collection: dict, fetchChildren: bool, fetchSources: bool, fetchEntities: bool, collectIndex: int) -> list:
+    def collect_events(self, collection: list[Matchrule], fetchChildren: bool, fetchSources: bool, fetchEntities: bool, collectIndex: int) -> list:
         """Collect data for aggregation and analysis.
 
         Args:
@@ -428,7 +438,7 @@ class SpiderFootCorrelator:
         self.log.debug(f"returning collection ({len(events)})...")
         return events
 
-    def aggregate_events(self, rule: dict, events: list) -> dict:
+    def aggregate_events(self, rule: _Aggregation, events: list) -> dict:
         """Aggregate events according to the rule.
 
         Args:
@@ -438,10 +448,6 @@ class SpiderFootCorrelator:
         Returns:
             dict: TBD
         """
-        if 'field' not in rule:
-            self.log.error(f"Unable to find field definition for aggregation in {rule['id']}")
-            return False
-
         def event_strip(event: dict, field: str, value: str) -> None:
             """Strip sub fields that don't match value.
 
@@ -458,14 +464,14 @@ class SpiderFootCorrelator:
 
         ret = dict()
         for e in events:
-            buckets = event_extract(e, rule['field'])
+            buckets = event_extract(e, rule.field)
             for b in buckets:
                 e_copy = deepcopy(e)
                 # if the bucket is of a child, source or entity,
                 # remove the children, sources or entities that
                 # aren't matching this bucket
-                if "." in rule['field']:
-                    event_strip(e_copy, rule['field'], b)
+                if "." in rule.field:
+                    event_strip(e_copy, rule.field, b)
                 if b in ret:
                     ret[b].append(e_copy)
                     continue
@@ -473,7 +479,7 @@ class SpiderFootCorrelator:
 
         return ret
 
-    def analyze_events(self, rule: dict, buckets: dict) -> None:
+    def analyze_events(self, rule: _AnalysisItem, buckets: dict) -> None:
         """Analyze events according to the rule. Modifies buckets in place.
 
         Args:
@@ -488,21 +494,21 @@ class SpiderFootCorrelator:
         """
         self.log.debug(f"applying {rule}")
 
-        if rule['method'] == "threshold":
+        if rule.method == "threshold":
             return self.analysis_threshold(rule, buckets)
-        if rule['method'] == "outlier":
+        if rule.method == "outlier":
             return self.analysis_outlier(rule, buckets)
-        if rule['method'] == "first_collection_only":
+        if rule.method == "first_collection_only":
             return self.analysis_first_collection_only(rule, buckets)
-        if rule['method'] == "match_all_to_first_collection":
+        if rule.method == "match_all_to_first_collection":
             return self.analysis_match_all_to_first_collection(rule, buckets)
-        if rule['method'] == "both_collections":
+        if rule.method == "both_collections":
             # TODO: Implement when genuine case appears
             pass
 
         return None
 
-    def analysis_match_all_to_first_collection(self, rule: dict, buckets: dict) -> None:
+    def analysis_match_all_to_first_collection(self, rule: _AnalysisItem_MatchAllToFirstCollection, buckets: dict) -> None:
         """Find buckets that are in the first collection.
 
         Args:
@@ -522,7 +528,7 @@ class SpiderFootCorrelator:
                 bool: TBD
             """
             for event_data in events:
-                if rule['match_method'] == 'subnet':
+                if rule.match_method == 'subnet':
                     for r in reference:
                         try:
                             self.log.debug(f"checking if {event_data} is in {r}")
@@ -532,11 +538,11 @@ class SpiderFootCorrelator:
                         except Exception:
                             pass
 
-                if rule['match_method'] == 'exact' and event_data in reference:
+                if rule.match_method == 'exact' and event_data in reference:
                     self.log.debug(f"found exact match: {event_data} in {reference}")
                     return True
 
-                if rule['match_method'] == 'contains':
+                if rule.match_method == 'contains':
                     for r in reference:
                         if event_data in r:
                             self.log.debug(f"found pattern match: {event_data} in {r}")
@@ -553,7 +559,7 @@ class SpiderFootCorrelator:
         for bucket in buckets:
             for event in buckets[bucket]:
                 if event['_collection'] == 0:
-                    reference.update(event_extract(event, rule['field']))
+                    reference.update(event_extract(event, rule.field))
 
         for bucket in list(buckets.keys()):
             pluszerocount = 0
@@ -562,7 +568,7 @@ class SpiderFootCorrelator:
                     continue
                 pluszerocount += 1
 
-                if not check_event(event_extract(event, rule['field']), reference):
+                if not check_event(event_extract(event, rule.field), reference):
                     buckets[bucket].remove(event)
                     pluszerocount -= 1
 
@@ -570,7 +576,7 @@ class SpiderFootCorrelator:
             if pluszerocount == 0:
                 del (buckets[bucket])
 
-    def analysis_first_collection_only(self, rule: dict, buckets: dict) -> None:
+    def analysis_first_collection_only(self, rule: _AnalysisItem_FirstCollectionOnly, buckets: dict) -> None:
         """analysis_first_collection_only TBD
 
         Args:
@@ -583,12 +589,12 @@ class SpiderFootCorrelator:
         for bucket in buckets:
             for e in buckets[bucket]:
                 if e['_collection'] == 0:
-                    colzero.add(e[rule['field']])
+                    colzero.add(e[rule.field])
 
         for bucket in list(buckets.keys()):
             delete = False
             for e in buckets[bucket]:
-                if e['_collection'] > 0 and e[rule['field']] in colzero:
+                if e['_collection'] > 0 and e[rule.field] in colzero:
                     delete = True
                     break
             if delete:
@@ -601,7 +607,7 @@ class SpiderFootCorrelator:
                     del (buckets[bucket])
                     break
 
-    def analysis_outlier(self, rule: dict, buckets: dict) -> None:
+    def analysis_outlier(self, rule: _AnalysisItem_Outlier, buckets: dict) -> None:
         """analysis_outlier TBD
 
         Args:
@@ -623,7 +629,7 @@ class SpiderFootCorrelator:
         avgpct = (avg / total) * 100.0
 
         self.log.debug(f"average percent is {avgpct} based on {avg} / {total} * 100.0")
-        if avgpct < rule.get('noisy_percent', 10):
+        if avgpct < rule.noisy_percent:
             self.log.debug(f"Not correlating because the average percent is {avgpct} (too anomalous)")
             for bucket in list(buckets.keys()):
                 del (buckets[bucket])
@@ -632,13 +638,13 @@ class SpiderFootCorrelator:
         # Figure out which buckets don't contain outliers and delete them
         delbuckets = list()
         for bucket in buckets:
-            if (countmap[bucket] / total) * 100.0 > rule['maximum_percent']:
+            if (countmap[bucket] / total) * 100.0 > rule.maximum_percent:
                 delbuckets.append(bucket)
 
         for bucket in set(delbuckets):
             del (buckets[bucket])
 
-    def analysis_threshold(self, rule: dict, buckets: dict) -> None:
+    def analysis_threshold(self, rule: _AnalysisItem_Threshold, buckets: dict) -> None:
         """analysis_treshold TBD
 
         Args:
@@ -649,15 +655,15 @@ class SpiderFootCorrelator:
         for bucket in list(buckets.keys()):
             countmap = dict()
             for event in buckets[bucket]:
-                e = event_extract(event, rule['field'])
+                e = event_extract(event, rule.field)
                 for ef in e:
                     if ef not in countmap:
                         countmap[ef] = 0
                     countmap[ef] += 1
 
-            if not rule.get('count_unique_only'):
+            if rule.count_unique_only is False:
                 for v in countmap:
-                    if countmap[v] >= rule.get('minimum', 0) and countmap[v] <= rule.get('maximum', 999999999):
+                    if countmap[v] >= rule.minimum and countmap[v] <= rule.maximum:
                         continue
                     # Delete the bucket of events if it didn't meet the
                     # analysis criteria.
@@ -668,10 +674,10 @@ class SpiderFootCorrelator:
             # If we're only looking at the number of times the requested
             # field appears in the bucket...
             uniques = len(list(countmap.keys()))
-            if uniques < rule.get('minimum', 0) or uniques > rule.get('maximum', 999999999):
+            if uniques < rule.minimum or uniques > rule.maximum:
                 del (buckets[bucket])
 
-    def analyze_field_scope(self, field: str) -> list:
+    def analyze_field_scope(self, field: str) -> tuple[bool, bool, bool]:
         """Analysis field scope.
 
         Args:
@@ -681,13 +687,13 @@ class SpiderFootCorrelator:
             list: TBD
         """
 
-        return [
+        return (
             field.startswith('child.'),
             field.startswith('source.'),
             field.startswith('entity.')
-        ]
+        )
 
-    def analyze_rule_scope(self, rule: dict) -> list:
+    def analyze_rule_scope(self, rule: Rule) -> tuple[bool, bool, bool]:
         """Analyze the rule for use of children, sources or entities
         so that they can be fetched during collection.
 
@@ -702,10 +708,12 @@ class SpiderFootCorrelator:
         source = False
         entity = False
 
-        if rule.get('collections'):
-            for collection in rule['collections']:
-                for method in collection['collect']:
-                    c, s, e = self.analyze_field_scope(method['field'])
+        # if rule.collections is not None and len(rule.collections) > 0:
+        # if len(rule.collections) > 0:
+        if rule.collections:
+            for collection in rule.collections:
+                for method in collection.collect:
+                    c, s, e = self.analyze_field_scope(method.field)
                     if c:
                         children = True
                     if s:
@@ -713,8 +721,9 @@ class SpiderFootCorrelator:
                     if e:
                         entity = True
 
-        if rule.get('aggregation'):
-            c, s, e = self.analyze_field_scope(rule['aggregation']['field'])
+        # if rule.aggregation is not None:
+        if rule.aggregation:
+            c, s, e = self.analyze_field_scope(rule.aggregation.field)
             if c:
                 children = True
             if s:
@@ -722,11 +731,12 @@ class SpiderFootCorrelator:
             if e:
                 entity = True
 
-        if rule.get('analysis'):
-            for analysis in rule['analysis']:
+        # if rule.analysis is not None:
+        if rule.analysis:
+            for analysis in rule.analysis:
                 if 'field' not in analysis:
                     continue
-                c, s, e = self.analyze_field_scope(analysis['field'])
+                c, s, e = self.analyze_field_scope(analysis.field)
                 if c:
                     children = True
                 if s:
@@ -736,7 +746,7 @@ class SpiderFootCorrelator:
 
         return children, source, entity
 
-    def process_rule(self, rule: dict) -> list:
+    def process_rule(self, rule: Rule) -> list:
         """Work through all the components of the rule to produce a final
         set of data elements for building into correlations.
 
@@ -752,8 +762,8 @@ class SpiderFootCorrelator:
         fetchChildren, fetchSources, fetchEntities = self.analyze_rule_scope(rule)
 
         # Go through collections and collect the data from the DB
-        for collectIndex, c in enumerate(rule.get('collections')):
-            events.extend(self.collect_events(c['collect'],
+        for collectIndex, c in enumerate(rule.collections):
+            events.extend(self.collect_events(c.collect,
                           fetchChildren,
                           fetchSources,
                           fetchEntities,
@@ -768,8 +778,9 @@ class SpiderFootCorrelator:
 
         # Perform aggregations. Aggregating breaks up the events
         # into buckets with the key being the field to aggregate by.
-        if 'aggregation' in rule:
-            buckets = self.aggregate_events(rule['aggregation'], events)
+        # if rule.aggregation is not None:
+        if rule.aggregation:
+            buckets = self.aggregate_events(rule.aggregation, events)
             if not buckets:
                 self.log.debug("no buckets found after aggregation")
                 return None
@@ -777,15 +788,16 @@ class SpiderFootCorrelator:
             buckets = {'default': events}
 
         # Perform analysis across the buckets
-        if 'analysis' in rule:
-            for method in rule['analysis']:
+        # if rule.analysis is not None:
+        if rule.analysis:
+            for method in rule.analysis:
                 # analyze() will operate on the bucket, make changes
                 # and empty it if the analysis doesn't yield results.
                 self.analyze_events(method, buckets)
 
         return buckets
 
-    def build_correlation_title(self, rule: dict, data: list) -> str:
+    def build_correlation_title(self, rule: Rule, data: list) -> str:
         """Build the correlation title with field substitution.
 
         Args:
@@ -795,7 +807,7 @@ class SpiderFootCorrelator:
         Returns:
             str: correlation rule title
         """
-        title = rule['headline']
+        title = rule.headline
         if isinstance(title, dict):
             title = title['text']
 
@@ -808,7 +820,7 @@ class SpiderFootCorrelator:
             title = title.replace("{" + m + "}", v.replace("\r", "").split("\n")[0])
         return title
 
-    def create_correlation(self, rule: dict, data: list, readonly: bool = False) -> bool:
+    def create_correlation(self, rule: Rule, data: list, readonly: bool = False) -> bool:
         """Store the correlation result in the backend database.
 
         Args:
@@ -820,7 +832,7 @@ class SpiderFootCorrelator:
             bool: Correlation rule result was stored successfully.
         """
         title = self.build_correlation_title(rule, data)
-        self.log.info(f"New correlation [{rule['id']}]: {title}")
+        self.log.info(f"New correlation [{rule.id}]: {title}")
 
         if readonly:
             return True
@@ -830,20 +842,20 @@ class SpiderFootCorrelator:
             eventIds.append(e['id'])
 
         corrId = self.dbh.correlationResultCreate(self.scanId,
-                                                  rule['id'],
-                                                  rule['meta']['name'],
-                                                  rule['meta']['description'],
-                                                  rule['meta']['risk'],
-                                                  rule['rawYaml'],
+                                                  rule.id,
+                                                  rule.meta.name,
+                                                  rule.meta.description,
+                                                  rule.meta.risk,
+                                                  self.raw_ruleset[rule.id],
                                                   title,
                                                   eventIds)
         if not corrId:
-            self.log.error(f"Unable to create correlation in DB for {rule['id']}")
+            self.log.error(f"Unable to create correlation in DB for {rule.id}")
             return False
 
         return True
 
-    def check_ruleset_validity(self, rules: list) -> bool:
+    def check_ruleset_validity(self, rules: list[Rule]) -> bool:
         """Syntax-check all rules.
 
         Args:
@@ -861,7 +873,7 @@ class SpiderFootCorrelator:
             return True
         return False
 
-    def check_rule_validity(self, rule: dict) -> bool:
+    def check_rule_validity(self, rule: Rule) -> bool:
         """Check a correlation rule for syntax errors.
 
         Args:
@@ -870,13 +882,13 @@ class SpiderFootCorrelator:
         Returns:
             bool: correlation rule is valid
         """
-        fields = set(rule.keys())
+        fields = set(rule.__dataclass_fields__.keys())
 
         if not fields:
             self.log.error("Rule is empty.")
             return False
 
-        if not rule.get('id'):
+        if not rule.id:
             self.log.error("Rule has no ID.")
             return False
 
@@ -884,38 +896,38 @@ class SpiderFootCorrelator:
 
         for f in self.mandatory_components:
             if f not in fields:
-                self.log.error(f"Mandatory rule component, {f}, not found in {rule['id']}.")
+                self.log.error(f"Mandatory rule component, {f}, not found in {rule.id}.")
                 ok = False
 
         validfields = set(self.components.keys())
         if len(fields.union(validfields)) > len(validfields):
-            self.log.error(f"Unexpected field(s) in correlation rule {rule['id']}: {[f for f in fields if f not in validfields]}")
+            self.log.error(f"Unexpected field(s) in correlation rule {rule.id}: {[f for f in fields if f not in validfields]}")
             ok = False
 
-        for collection in rule.get('collections', list()):
+        for collection in rule.collections:
             # Match by data element type(s) or type regexps
-            for matchrule in collection['collect']:
-                if matchrule['method'] not in ["exact", "regex"]:
-                    self.log.error(f"Invalid collection method: {matchrule['method']}")
+            for matchrule in collection.collect:
+                if matchrule.method not in ["exact", "regex"]:
+                    self.log.error(f"Invalid collection method: {matchrule.method}")
                     ok = False
 
-                if matchrule['field'] not in ["type", "module", "data",
+                if matchrule.field not in ["type", "module", "data",
                                               "child.type", "child.module", "child.data",
                                               "source.type", "source.module", "source.data",
                                               "entity.type", "entity.module", "entity.data"]:
-                    self.log.error(f"Invalid collection field: {matchrule['field']}")
+                    self.log.error(f"Invalid collection field: {matchrule.field}")
                     ok = False
 
-                if 'value' not in matchrule:
-                    self.log.error(f"Value missing for collection rule in {rule['id']}")
+                if matchrule.value is None:
+                    self.log.error(f"Value missing for collection rule in {rule.id}")
                     ok = False
 
-            if 'analysis' in rule:
+            if rule.analysis is not None:
                 valid_methods = ["threshold", "outlier", "first_collection_only",
                                  "both_collections", "match_all_to_first_collection"]
-                for method in rule['analysis']:
-                    if method['method'] not in valid_methods:
-                        self.log.error(f"Unknown analysis method '{method['method']}' defined for {rule['id']}.")
+                for method in rule.analysis:
+                    if method.method not in valid_methods:
+                        self.log.error(f"Unknown analysis method '{method.method}' defined for {rule.id}.")
                         ok = False
 
         for field in fields:
@@ -928,13 +940,13 @@ class SpiderFootCorrelator:
                 if isinstance(rule[field], list):
                     for item, optelement in enumerate(rule[field]):
                         if not optelement.get(opt):
-                            self.log.error(f"Required field for {field} missing in {rule['id']}, item {item}: {opt}")
+                            self.log.error(f"Required field for {field} missing in {rule.id}, item {item}: {opt}")
                             ok = False
                     continue
 
                 if isinstance(rule[field], dict):
                     if not rule[field].get(opt):
-                        self.log.error(f"Required field for {field} missing in {rule['id']}: {opt}")
+                        self.log.error(f"Required field for {field} missing in {rule.id}: {opt}")
                         ok = False
 
                 else:
@@ -943,7 +955,7 @@ class SpiderFootCorrelator:
 
                 # Check if any of the options aren't valid
                 if opt not in alloptions:
-                    self.log.error(f"Unexpected option, {opt}, found in {field} for {rule['id']}. Must be one of {alloptions}.")
+                    self.log.error(f"Unexpected option, {opt}, found in {field} for {rule.id}. Must be one of {alloptions}.")
                     ok = False
 
         if ok:
