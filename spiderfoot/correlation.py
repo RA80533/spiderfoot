@@ -19,6 +19,11 @@ from .correlation_rule import Matchrule
 from .correlation_rule import Rule
 
 
+# 17 in test/unit/spiderfoot/test_spiderfootcorrelator.py
+#  3 in sf.py
+#  2 in sfscan.py
+#  1 in spiderfoot/__init__.py
+#  1 in spiderfoot/correlation.py
 class SpiderFootCorrelator:
     """SpiderFoot correlation capabilities.
 
@@ -26,16 +31,25 @@ class SpiderFootCorrelator:
         Make the rule checking per analysis method
     """
 
+    # 50 in spiderfoot/correlation.py
     log = logging.getLogger("spiderfoot.correlator")
+    # 10 in spiderfoot/correlation.py
     dbh = None
+    # 11 in spiderfoot/correlation.py
     scanId = None
+    # 5 in spiderfoot/correlation.py
     types = None
+    # 6 in spiderfoot/correlation.py
     rules: list[Rule] = list()
+    # 3 in spiderfoot/correlation.py
     raw_ruleset: dict[str, str] = dict()
+    # 6 in spiderfoot/correlation.py
     type_entity_map = dict()
 
     # For syntax checking
+    # 1 in spiderfoot/correlation.py
     mandatory_components = ["meta", "collections", "headline"]
+    # 4 in spiderfoot/correlation.py
     components = {
         # collect a set of data elements based on various conditions
         "meta": {
@@ -58,6 +72,10 @@ class SpiderFootCorrelator:
         "version": {},
     }
 
+    # 16 in test/unit/spiderfoot/test_spiderfootcorrelator.py
+    #  2 in sf.py
+    #  1 in sfscan.py
+    #  1 in spiderfoot/correlation.py
     def __init__(self, dbh: SpiderFootDb, ruleset: dict[str, str], scanId: str = None) -> None:
         """Initialize SpiderFoot correlator engine with scan ID and ruleset.
 
@@ -100,6 +118,7 @@ class SpiderFootCorrelator:
         if not self.check_ruleset_validity(self.rules):
             raise SyntaxError("Sanity check of correlation rules failed.")
 
+    # 1 in sf.py
     def get_ruleset(self) -> list[Rule]:
         """Correlation rule set.
 
@@ -108,6 +127,10 @@ class SpiderFootCorrelator:
         """
         return self.rules
 
+    # 1 in sf.py
+    # 1 in sfscan.py
+    # 1 in spiderfoot/correlation.py
+    # 1 in test/unit/spiderfoot/test_spiderfootcorrelator.py
     def run_correlations(self) -> None:
         """Run all correlation rules.
 
@@ -133,6 +156,8 @@ class SpiderFootCorrelator:
             for result in results:
                 self.create_correlation(rule, results[result])
 
+    # 2 in spiderfoot/correlation.py
+    # 1 in test/unit/spiderfoot/test_spiderfootcorrelator.py
     def build_db_criteria(self, matchrule: Matchrule) -> dict:
         """Build up the criteria to be used to query the database.
 
@@ -212,6 +237,8 @@ class SpiderFootCorrelator:
 
         return criterias
 
+    # 2 in spiderfoot/correlation.py
+    # 1 in test/unit/spiderfoot/test_spiderfootcorrelator.py
     def enrich_event_sources(self, events: dict) -> None:
         """Enrich event sources.
 
@@ -233,6 +260,8 @@ class SpiderFootCorrelator:
                     'entity_type': self.type_entity_map[row[15]]
                 })
 
+    # 2 in spiderfoot/correlation.py
+    # 1 in test/unit/spiderfoot/test_spiderfootcorrelator.py
     def enrich_event_children(self, events: dict) -> None:
         """Enrich event children.
 
@@ -253,6 +282,8 @@ class SpiderFootCorrelator:
                     'id': row[8]
                 })
 
+    # 2 in spiderfoot/correlation.py
+    # 1 in test/unit/spiderfoot/test_spiderfootcorrelator.py
     def enrich_event_entities(self, events: dict) -> None:
         """Given our starting set of ids, loop through the source
         of each until you have a match according to the criteria
@@ -316,6 +347,7 @@ class SpiderFootCorrelator:
 
             entity_missing = deepcopy(new_missing)
 
+    # 1 in spiderfoot/correlation.py
     def collect_from_db(self, matchrule: Matchrule, fetchChildren: bool, fetchSources: bool, fetchEntities: bool) -> list:
         """Collect event values from database.
 
@@ -366,6 +398,7 @@ class SpiderFootCorrelator:
         self.log.debug(f"returning {len(events.values())} events from match_rule {matchrule}")
         return list(events.values())
 
+    # 1 in spiderfoot/correlation.py
     def refine_collection(self, matchrule: Matchrule, events: list) -> None:
         """Cull events from the events list if they don't meet the match criteria.
 
@@ -391,6 +424,7 @@ class SpiderFootCorrelator:
                 self.log.debug(f"removing {event} because of {field}")
                 events.remove(event)
 
+    # 1 in spiderfoot/correlation.py
     def collect_events(self, collection: list[Matchrule], fetchChildren: bool, fetchSources: bool, fetchEntities: bool, collectIndex: int) -> list:
         """Collect data for aggregation and analysis.
 
@@ -437,6 +471,7 @@ class SpiderFootCorrelator:
         self.log.debug(f"returning collection ({len(events)})...")
         return events
 
+    # 1 in spiderfoot/correlation.py
     def aggregate_events(self, rule: _Aggregation, events: list) -> dict:
         """Aggregate events according to the rule.
 
@@ -478,6 +513,7 @@ class SpiderFootCorrelator:
 
         return ret
 
+    # 1 in spiderfoot/correlation.py
     def analyze_events(self, rule: _AnalysisItem, buckets: dict) -> None:
         """Analyze events according to the rule. Modifies buckets in place.
 
@@ -501,6 +537,7 @@ class SpiderFootCorrelator:
 
         return None
 
+    # 1 in spiderfoot/correlation.py
     def analysis_match_all_to_first_collection(self, rule: _AnalysisItem_MatchAllToFirstCollection, buckets: dict) -> None:
         """Find buckets that are in the first collection.
 
@@ -569,6 +606,7 @@ class SpiderFootCorrelator:
             if pluszerocount == 0:
                 del (buckets[bucket])
 
+    # 1 in spiderfoot/correlation.py
     def analysis_first_collection_only(self, rule: _AnalysisItem_FirstCollectionOnly, buckets: dict) -> None:
         """analysis_first_collection_only TBD
 
@@ -600,6 +638,7 @@ class SpiderFootCorrelator:
                     del (buckets[bucket])
                     break
 
+    # 1 in spiderfoot/correlation.py
     def analysis_outlier(self, rule: _AnalysisItem_Outlier, buckets: dict) -> None:
         """analysis_outlier TBD
 
@@ -637,6 +676,7 @@ class SpiderFootCorrelator:
         for bucket in set(delbuckets):
             del (buckets[bucket])
 
+    # 1 in spiderfoot/correlation.py
     def analysis_threshold(self, rule: _AnalysisItem_Threshold, buckets: dict) -> None:
         """analysis_treshold TBD
 
@@ -670,6 +710,7 @@ class SpiderFootCorrelator:
             if uniques < rule.minimum or uniques > rule.maximum:
                 del (buckets[bucket])
 
+    # 4 in spiderfoot/correlation.py
     def analyze_field_scope(self, field: str) -> tuple[bool, bool, bool]:
         """Analysis field scope.
 
@@ -686,6 +727,7 @@ class SpiderFootCorrelator:
             field.startswith('entity.')
         )
 
+    # 1 in spiderfoot/correlation.py
     def analyze_rule_scope(self, rule: Rule) -> tuple[bool, bool, bool]:
         """Analyze the rule for use of children, sources or entities
         so that they can be fetched during collection.
@@ -739,6 +781,8 @@ class SpiderFootCorrelator:
 
         return children, source, entity
 
+    # 2 in spiderfoot/correlation.py
+    # 1 in test/unit/spiderfoot/test_spiderfootcorrelator.py
     def process_rule(self, rule: Rule) -> list:
         """Work through all the components of the rule to produce a final
         set of data elements for building into correlations.
@@ -790,6 +834,8 @@ class SpiderFootCorrelator:
 
         return buckets
 
+    # 2 in spiderfoot/correlation.py
+    # 1 in test/unit/spiderfoot/test_spiderfootcorrelator.py
     def build_correlation_title(self, rule: Rule, data: list) -> str:
         """Build the correlation title with field substitution.
 
@@ -813,6 +859,8 @@ class SpiderFootCorrelator:
             title = title.replace("{" + m + "}", v.replace("\r", "").split("\n")[0])
         return title
 
+    # 2 in spiderfoot/correlation.py
+    # 2 in test/unit/spiderfoot/test_spiderfootcorrelator.py
     def create_correlation(self, rule: Rule, data: list, readonly: bool = False) -> bool:
         """Store the correlation result in the backend database.
 
@@ -848,6 +896,8 @@ class SpiderFootCorrelator:
 
         return True
 
+    # 2 in spiderfoot/correlation.py
+    # 2 in test/unit/spiderfoot/test_spiderfootcorrelator.py
     def check_ruleset_validity(self, rules: list[Rule]) -> bool:
         """Syntax-check all rules.
 
@@ -866,6 +916,8 @@ class SpiderFootCorrelator:
             return True
         return False
 
+    # 4 in test/unit/spiderfoot/test_spiderfootcorrelator.py
+    # 2 in spiderfoot/correlation.py
     def check_rule_validity(self, rule: Rule) -> bool:
         """Check a correlation rule for syntax errors.
 
@@ -956,6 +1008,7 @@ class SpiderFootCorrelator:
         return False
 
 
+# 7 in spiderfoot/correlation.py
 def event_extract(event: dict, field: str) -> list:
     """Event event field.
 
@@ -977,6 +1030,7 @@ def event_extract(event: dict, field: str) -> list:
     return [event[field]]
 
 
+# 3 in spiderfoot/correlation.py
 def event_keep(event: dict, field: str, patterns: str, patterntype: str) -> bool:
     """Keep event field.
 
