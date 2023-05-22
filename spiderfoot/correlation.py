@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import dataclasses
 import logging
 import re
+import typing
 import yaml
 from copy import deepcopy
 
@@ -17,6 +19,44 @@ from .correlation_rule import _AnalysisItem_Outlier
 from .correlation_rule import _AnalysisItem_Threshold
 from .correlation_rule import Matchrule
 from .correlation_rule import Rule
+
+
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class CorrelationEvent:
+    type: str  # row[4]
+    data: str  # row[1]
+    module: str  # row[3]
+    id: str  # row[8]
+    entity_type: str  # self.type_entity_map[row[4]]
+    source: list[_EventSource] = []
+    child: list[_EventChild] = []
+    entity: list[_EventEntity] = []
+
+
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class _EventSource:
+    type: str  # row[15]
+    data: str  # row[2]
+    module: str  # row[16]
+    id: str  # row[9]
+    entity_type: str  # self.type_entity_map[row[15]]
+
+
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class _EventChild:
+    type: str  # row[4]
+    data: str  # row[1]
+    module: str  # row[3]
+    id: str  # row[8]
+
+
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class _EventEntity:
+    type: str  # row[15]
+    data: str  # row[2]
+    module: str  # row[16]
+    id: str  # row[9]
+    entity_type: str  # self.type_entity_map[row[15]]
 
 
 # 17 in test/unit/spiderfoot/test_spiderfootcorrelator.py
@@ -44,7 +84,7 @@ class SpiderFootCorrelator:
     # 3 in spiderfoot/correlation.py
     raw_ruleset: dict[str, str] = dict()
     # 6 in spiderfoot/correlation.py
-    type_entity_map = dict()
+    type_entity_map: dict[str, str] = dict()
 
     # For syntax checking
     # 1 in spiderfoot/correlation.py
@@ -239,7 +279,7 @@ class SpiderFootCorrelator:
 
     # 2 in spiderfoot/correlation.py
     # 1 in test/unit/spiderfoot/test_spiderfootcorrelator.py
-    def enrich_event_sources(self, events: dict) -> None:
+    def enrich_event_sources(self, events: dict[str, CorrelationEvent]) -> None:
         """Enrich event sources.
 
         Args:
@@ -252,17 +292,30 @@ class SpiderFootCorrelator:
             self.log.debug(f"Getting sources for {len(chunk)} events")
             source_data = self.dbh.scanElementSourcesDirect(self.scanId, chunk)
             for row in source_data:
-                events[row[8]]['source'].append({
-                    'type': row[15],
-                    'data': row[2],
-                    'module': row[16],
-                    'id': row[9],
-                    'entity_type': self.type_entity_map[row[15]]
-                })
+                _row_2 = row[2]  # s."data" AS "source_data"
+                _row_8 = row[8]  # c."hash"
+                _row_9 = row[9]  # c."source_event_hash"
+                _row_15 = row[15]  # s."type"
+                _row_16 = row[16]  # s."module"
+                assert isinstance(_row_2, str)
+                assert isinstance(_row_8, str)
+                assert isinstance(_row_9, str)
+                assert isinstance(_row_15, str)
+                assert isinstance(_row_16, str)
+                _events_key: str = _row_8
+                _events_value__entity_type: str = self.type_entity_map[_row_15]
+                _events_value: _EventSource = _EventSource(
+                    type=_row_15,
+                    data=_row_2,
+                    module=_row_16,
+                    id=_row_9,
+                    entity_type=_events_value__entity_type,
+                )
+                events[_events_key].source.append(_events_value)
 
     # 2 in spiderfoot/correlation.py
     # 1 in test/unit/spiderfoot/test_spiderfootcorrelator.py
-    def enrich_event_children(self, events: dict) -> None:
+    def enrich_event_children(self, events: dict[str, CorrelationEvent]) -> None:
         """Enrich event children.
 
         Args:
@@ -275,16 +328,28 @@ class SpiderFootCorrelator:
             self.log.debug(f"Getting children for {len(chunk)} events")
             child_data = self.dbh.scanResultEvent(self.scanId, sourceId=chunk)
             for row in child_data:
-                events[row[9]]['child'].append({
-                    'type': row[4],
-                    'data': row[1],
-                    'module': row[3],
-                    'id': row[8]
-                })
+                _row_1 = row[1]  # c."data"
+                _row_3 = row[3]  # c."module"
+                _row_4 = row[4]  # c."type"
+                _row_8 = row[8]  # c."hash"
+                _row_9 = row[9]  # c."source_event_hash"
+                assert isinstance(_row_1, str)
+                assert isinstance(_row_3, str)
+                assert isinstance(_row_4, str)
+                assert isinstance(_row_8, str)
+                assert isinstance(_row_9, str)
+                _events_key: str = _row_9
+                _events_value: _EventChild = _EventChild(
+                    type=_row_4,
+                    data=_row_1,
+                    module=_row_3,
+                    id=_row_8,
+                )
+                events[_events_key].child.append(_events_value)
 
     # 2 in spiderfoot/correlation.py
     # 1 in test/unit/spiderfoot/test_spiderfootcorrelator.py
-    def enrich_event_entities(self, events: dict) -> None:
+    def enrich_event_entities(self, events: dict[str, CorrelationEvent]) -> None:
         """Given our starting set of ids, loop through the source
         of each until you have a match according to the criteria
         provided.
@@ -292,25 +357,30 @@ class SpiderFootCorrelator:
         Args:
             events (dict): events
         """
-        entity_missing = dict()
+        entity_missing: dict[str, str] = dict()
         for event_id in events:
-            if 'source' not in events[event_id]:
-                continue
-
             row = events[event_id]
             # Go through each source if it's not an ENTITY, capture its ID
             # so we can capture its source, otherwise copy the source as
             # an entity record, since it's of a valid type to be considered one.
-            for source in row['source']:
-                if source['entity_type'] in ['ENTITY', 'INTERNAL']:
-                    events[row['id']]['entity'].append(source)
+            for source in row.source:
+                if source.entity_type in ['ENTITY', 'INTERNAL']:
+                    _events_key: str = row.id
+                    _events_value: _EventEntity = _EventEntity(
+                        type=source.type,
+                        data=source.data,
+                        module=source.module,
+                        id=source.id,
+                        entity_type=source.entity_type,
+                    )
+                    events[_events_key].entity.append(_events_value)
                 else:
                     # key is the element ID that we need to find an entity for
                     # by checking its source, and the value is the original ID
                     # for which we are seeking an entity. As we traverse up the
                     # discovery path the key will change but the value must always
                     # point back to the same ID.
-                    entity_missing[source['id']] = row['id']
+                    entity_missing[source.id] = row.id
 
         while len(entity_missing) > 0:
             self.log.debug(f"{len(entity_missing.keys())} entities are missing, going deeper...")
@@ -334,13 +404,24 @@ class SpiderFootCorrelator:
                     # and the value is the original ID of the item missing an entity
                     new_missing[entity_candidate[9]] = event_id
                 else:
-                    events[event_id]['entity'].append({
-                        'type': entity_candidate[15],
-                        'data': entity_candidate[2],
-                        'module': entity_candidate[16],
-                        'id': entity_candidate[9],
-                        'entity_type': self.type_entity_map[entity_candidate[15]]
-                    })
+                    _ec_2 = entity_candidate[2]
+                    _ec_9 = entity_candidate[9]
+                    _ec_15 = entity_candidate[15]
+                    _ec_16 = entity_candidate[16]
+                    assert isinstance(_ec_2, str)
+                    assert isinstance(_ec_9, str)
+                    assert isinstance(_ec_15, str)
+                    assert isinstance(_ec_16, str)
+                    _events_key: str = event_id
+                    _events_value__entity_type: str = self.type_entity_map[_ec_15]
+                    _events_value: _EventEntity = _EventEntity(
+                        type=_ec_15,
+                        data=_ec_2,
+                        module=_ec_16,
+                        id=_ec_9,
+                        entity_type=_events_value__entity_type,
+                    )
+                    events[_events_key].entity.append(_events_value)
 
             if len(new_missing) == 0:
                 break
@@ -348,7 +429,7 @@ class SpiderFootCorrelator:
             entity_missing = deepcopy(new_missing)
 
     # 1 in spiderfoot/correlation.py
-    def collect_from_db(self, matchrule: Matchrule, fetchChildren: bool, fetchSources: bool, fetchEntities: bool) -> list:
+    def collect_from_db(self, matchrule: Matchrule, fetchChildren: bool, fetchSources: bool, fetchEntities: bool) -> list[CorrelationEvent]:
         """Collect event values from database.
 
         Args:
@@ -361,7 +442,7 @@ class SpiderFootCorrelator:
             list: event values
         """
 
-        events = dict()
+        events: dict[str, CorrelationEvent] = dict()
 
         self.log.debug(f"match rule: {matchrule}")
         # Parse the criteria from the match rule
@@ -373,16 +454,24 @@ class SpiderFootCorrelator:
         query_args['instanceId'] = self.scanId
         self.log.debug(f"db query: {query_args}")
         for row in self.dbh.scanResultEvent(**query_args):
-            events[row[8]] = {
-                'type': row[4],
-                'data': row[1],
-                'module': row[3],
-                'id': row[8],
-                'entity_type': self.type_entity_map[row[4]],
-                'source': [],
-                'child': [],
-                'entity': []
-            }
+            _row_1 = row[1]  # c."data"
+            _row_3 = row[3]  # c."module"
+            _row_4 = row[4]  # c."type"
+            _row_8 = row[8]  # c."hash"
+            assert isinstance(_row_1, str)
+            assert isinstance(_row_3, str)
+            assert isinstance(_row_4, str)
+            assert isinstance(_row_8, str)
+            _events_key: str = _row_8
+            _events_value__entity_type: str = self.type_entity_map[_row_4]
+            _events_value: CorrelationEvent = CorrelationEvent(
+                type=_row_4,
+                data=_row_1,
+                module=_row_3,
+                id=_row_8,
+                entity_type=_events_value__entity_type,
+            )
+            events[_events_key] = _events_value
 
         # You need to fetch sources if you need entities, since
         # the source will often be the entity.
