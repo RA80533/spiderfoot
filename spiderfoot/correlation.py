@@ -90,6 +90,7 @@ class SpiderFootCorrelator:
 
         # Strip any trailing newlines that may have creeped into meta name/description
         for rule in self.rules:
+            continue
             for k in rule.meta.__dataclass_fields__.keys():
                 if isinstance(rule.meta[k], str):
                     rule.meta[k] = rule.meta[k].strip()
