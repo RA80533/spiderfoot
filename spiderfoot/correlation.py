@@ -56,8 +56,6 @@ class SpiderFootCorrelator:
         "headline": {},
         "id": {},
         "version": {},
-        "enabled": {},
-        "rawYaml": {}
     }
 
     def __init__(self, dbh: SpiderFootDb, ruleset: dict[str, str], scanId: str = None) -> None:
@@ -486,9 +484,6 @@ class SpiderFootCorrelator:
             rule (dict): correlation rule
             buckets (dict): TBD
 
-        Todo:
-            Implement support for 'both_collections'
-
         Returns:
             None
         """
@@ -502,9 +497,6 @@ class SpiderFootCorrelator:
             return self.analysis_first_collection_only(rule, buckets)
         if rule.method == "match_all_to_first_collection":
             return self.analysis_match_all_to_first_collection(rule, buckets)
-        if rule.method == "both_collections":
-            # TODO: Implement when genuine case appears
-            pass
 
         return None
 
@@ -924,7 +916,7 @@ class SpiderFootCorrelator:
 
             if rule.analysis is not None:
                 valid_methods = ["threshold", "outlier", "first_collection_only",
-                                 "both_collections", "match_all_to_first_collection"]
+                                 "match_all_to_first_collection"]
                 for method in rule.analysis:
                     if method.method not in valid_methods:
                         self.log.error(f"Unknown analysis method '{method.method}' defined for {rule.id}.")
