@@ -357,26 +357,6 @@ class SpiderFootCorrelator:
         self.log.debug(f"returning {len(events.values())} events from match_rule {matchrule}")
         return list(events.values())
 
-    def event_extract(self, event: dict, field: str) -> list:
-        """Event event field.
-
-        Args:
-            event (dict): event
-            field (str): TBD
-
-        Returns:
-            list: event data
-        """
-
-        if "." in field:
-            ret = list()
-            key, field = field.split(".")
-            for subevent in event[key]:
-                ret.extend(self.event_extract(subevent, field))
-            return ret
-
-        return [event[field]]
-
     def event_keep(self, event: dict, field: str, patterns: str, patterntype: str) -> bool:
         """Keep event field.
 
@@ -531,7 +511,7 @@ class SpiderFootCorrelator:
 
         ret = dict()
         for e in events:
-            buckets = self.event_extract(e, rule['field'])
+            buckets = event_extract(e, rule['field'])
             for b in buckets:
                 e_copy = deepcopy(e)
                 # if the bucket is of a child, source or entity,
@@ -626,7 +606,7 @@ class SpiderFootCorrelator:
         for bucket in buckets:
             for event in buckets[bucket]:
                 if event['_collection'] == 0:
-                    reference.update(self.event_extract(event, rule['field']))
+                    reference.update(event_extract(event, rule['field']))
 
         for bucket in list(buckets.keys()):
             pluszerocount = 0
@@ -635,7 +615,7 @@ class SpiderFootCorrelator:
                     continue
                 pluszerocount += 1
 
-                if not check_event(self.event_extract(event, rule['field']), reference):
+                if not check_event(event_extract(event, rule['field']), reference):
                     buckets[bucket].remove(event)
                     pluszerocount -= 1
 
@@ -722,7 +702,7 @@ class SpiderFootCorrelator:
         for bucket in list(buckets.keys()):
             countmap = dict()
             for event in buckets[bucket]:
-                e = self.event_extract(event, rule['field'])
+                e = event_extract(event, rule['field'])
                 for ef in e:
                     if ef not in countmap:
                         countmap[ef] = 0
@@ -875,7 +855,7 @@ class SpiderFootCorrelator:
         fields = re.findall(r"{([a-z\.]+)}", title)
         for m in fields:
             try:
-                v = self.event_extract(data[0], m)[0]
+                v = event_extract(data[0], m)[0]
             except Exception:
                 self.log.error(f"Field requested was not available: {m}")
             title = title.replace("{" + m + "}", v.replace("\r", "").split("\n")[0])
@@ -1022,3 +1002,24 @@ class SpiderFootCorrelator:
         if ok:
             return True
         return False
+
+
+def event_extract(event: dict, field: str) -> list:
+    """Event event field.
+
+    Args:
+        event (dict): event
+        field (str): TBD
+
+    Returns:
+        list: event data
+    """
+
+    if "." in field:
+        ret = list()
+        key, field = field.split(".")
+        for subevent in event[key]:
+            ret.extend(event_extract(subevent, field))
+        return ret
+
+    return [event[field]]
