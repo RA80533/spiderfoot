@@ -229,9 +229,6 @@ class SpiderFootPlugin():
         Raises:
             TypeError: target argument was invalid type
         """
-        if not isinstance(target, SpiderFootTarget):
-            raise TypeError(f"target is {type(target)}; expected SpiderFootTarget")
-
         self._currentTarget = target
 
     def setDbh(self, dbh: SpiderFootDb) -> None:
@@ -252,9 +249,6 @@ class SpiderFootPlugin():
         Raises:
             TypeError: scanId argument was invalid type
         """
-        if not isinstance(scanId, str):
-            raise TypeError(f"scanId is {type(scanId)}; expected str")
-
         self.__scanId__ = scanId
 
     def getScanId(self) -> str:
@@ -325,10 +319,6 @@ class SpiderFootPlugin():
         Raises:
             TypeError: sfEvent argument was invalid type
         """
-
-        if not isinstance(sfEvent, SpiderFootEvent):
-            raise TypeError(f"sfEvent is {type(sfEvent)}; expected SpiderFootEvent")
-
         eventName = sfEvent.eventType
         eventData = sfEvent.data
 
