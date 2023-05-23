@@ -142,9 +142,10 @@ class SpiderFootCorrelator:
         for rule_id in ruleset.keys():
             self.log.debug(f"Parsing rule {rule_id}...")
             try:
-                self.rules.append(yaml.safe_load(ruleset[rule_id]))
+                parsed_yaml = yaml.safe_load(ruleset[rule_id])
             except Exception as e:
                 raise SyntaxError(f"Unable to process a YAML correlation rule [{rule_id}]") from e
+            self.rules.append(Rule(**parsed_yaml))
 
         # Strip any trailing newlines that may have creeped into meta name/description
         for rule in self.rules:
