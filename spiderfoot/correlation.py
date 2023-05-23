@@ -285,8 +285,15 @@ class SpiderFootCorrelator:
         Args:
             events (dict): events
         """
-        event_chunks = [list(events.keys())[x:(x + 5000)] for x in range(0, len(list(events.keys())), 5000)]
+        EVENT_CHUNK_SIZE: int = 5_000
 
+        assert self.dbh is not None
+        assert self.scanId is not None
+
+        event_chunks = [
+            [*events.keys()][x:(x + EVENT_CHUNK_SIZE)]
+            for x in range(0, len([*events.keys()]), EVENT_CHUNK_SIZE)
+        ]
         for chunk in event_chunks:
             # Get sources
             self.log.debug(f"Getting sources for {len(chunk)} events")
@@ -321,8 +328,15 @@ class SpiderFootCorrelator:
         Args:
             events (dict): events
         """
-        event_chunks = [list(events.keys())[x:x + 5000] for x in range(0, len(list(events.keys())), 5000)]
+        EVENT_CHUNK_SIZE: int = 5_000
 
+        assert self.dbh is not None
+        assert self.scanId is not None
+
+        event_chunks = [
+            [*events.keys()][x:x + EVENT_CHUNK_SIZE]
+            for x in range(0, len([*events.keys()]), EVENT_CHUNK_SIZE)
+        ]
         for chunk in event_chunks:
             # Get children
             self.log.debug(f"Getting children for {len(chunk)} events")
