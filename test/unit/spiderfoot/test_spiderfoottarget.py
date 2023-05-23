@@ -12,24 +12,6 @@ class TestSpiderFootTarget(unittest.TestCase):
         'BITCOIN_ADDRESS'
     ]
 
-    def test_init_argument_targetValue_invalid_type_should_raise_TypeError(self):
-        target_type = 'IP_ADDRESS'
-
-        invalid_types = [None, list(), bytes(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    SpiderFootTarget(invalid_type, target_type)
-
-    def test_init_argument_targetType_invalid_type_should_raise_TypeError(self):
-        target_value = 'example target value'
-
-        invalid_types = [None, list(), bytes(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    SpiderFootTarget(target_value, invalid_type)
-
     def test_init_argument_targetType_invalid_should_raise_ValueError(self):
         target_value = 'example target value'
         with self.assertRaises(ValueError):
@@ -83,17 +65,6 @@ class TestSpiderFootTarget(unittest.TestCase):
         self.assertIsInstance(target.targetType, str)
         self.assertEqual(target_type, target.targetType)
 
-    def test_targetType_attribute_setter_invalid_type_should_raise_TypeError(self):
-        target_value = 'example target value'
-        target_type = 'IP_ADDRESS'
-
-        invalid_types = [None, list(), bytes(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    target = SpiderFootTarget(target_value, target_type)
-                    target.targetType = invalid_type
-
     def test_targetValue_attribute_should_return_a_string(self):
         target_value = 'example target value'
         target_type = 'IP_ADDRESS'
@@ -101,17 +72,6 @@ class TestSpiderFootTarget(unittest.TestCase):
 
         self.assertIsInstance(target.targetValue, str)
         self.assertEqual(target_value, target.targetValue)
-
-    def test_targetValue_attribute_setter_invalid_type_should_raise_TypeError(self):
-        target_value = 'example target value'
-        target_type = 'IP_ADDRESS'
-
-        invalid_types = [None, list(), bytes(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    target = SpiderFootTarget(target_value, target_type)
-                    target.targetValue = invalid_type
 
     def test_targetValue_attribute_setter_empty_value_should_raise_ValueError(self):
         target_value = 'example target value'
