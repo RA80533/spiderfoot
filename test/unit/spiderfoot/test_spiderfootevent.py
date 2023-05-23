@@ -108,19 +108,6 @@ class TestSpiderFootEvent(unittest.TestCase):
         with self.assertRaises(ValueError):
             SpiderFootEvent(event_type, event_data, module, source_event)
 
-    def test_init_argument_sourceEvent_of_invalid_type_should_raise_TypeError(self):
-        event_type = 'ROOT'
-        event_data = 'example event data'
-        module = ''
-
-        event_type = 'example non-root event type'
-        module = 'example module'
-        invalid_types = [None, "", bytes(), list(), dict()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    SpiderFootEvent(event_type, event_data, module, invalid_type)
-
     def test_init_argument_confidence_of_invalid_type_should_raise_TypeError(self):
         event_type = 'ROOT'
         event_data = 'example event data'

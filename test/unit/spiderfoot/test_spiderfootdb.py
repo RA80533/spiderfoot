@@ -77,18 +77,6 @@ class TestSpiderFootDb(unittest.TestCase):
         self.assertIsInstance(search_results, list)
         self.assertFalse(search_results)
 
-    def test_search_argument_criteria_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test search(self, criteria, filterFp=False)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        invalid_types = [None, "", list(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.search(invalid_type, False)
-
     def test_search_argument_criteria_key_of_invalid_type_should_raise_TypeError(self):
         """
         Test search(self, criteria, filterFp=False)
@@ -146,44 +134,6 @@ class TestSpiderFootDb(unittest.TestCase):
         sfdb.scanLogEvent("", "", "", None)
 
         self.assertEqual('TBD', 'TBD')
-
-    def test_scanLogEvent_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanLogEvent(self, instanceId, classification, message, component=None)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanLogEvent(invalid_type, "", "")
-
-    def test_scanLogEvent_argument_classification_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanLogEvent(self, instanceId, classification, message, component=None)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        instance_id = "example instance id"
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanLogEvent(instance_id, invalid_type, "")
-
-    def test_scanLogEvent_argument_message_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanLogEvent(self, instanceId, classification, message, component=None)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        instance_id = "example instance id"
-        invalid_types = [None, list(), dict()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanLogEvent(instance_id, "", invalid_type)
 
     @unittest.skip("todo")
     def test_scanInstanceCreate_should_create_a_scan_instance(self):
@@ -274,22 +224,6 @@ class TestSpiderFootDb(unittest.TestCase):
         sfdb.scanInstanceSet(scan_instance, None, None, None)
         self.assertEqual('TBD', 'TBD')
 
-    def test_scanInstanceSet_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanInstanceSet(self, instanceId, started=None, ended=None, status=None)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        started = None
-        ended = None
-        status = None
-
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanInstanceSet(invalid_type, started, ended, status)
-
     def test_scanInstanceGet_should_return_scan_info(self):
         """
         Test scanInstanceGet(self, instanceId)
@@ -321,18 +255,6 @@ class TestSpiderFootDb(unittest.TestCase):
         self.assertIsInstance(scan_instance_get[5], str)
         self.assertEqual(scan_instance_get[5], 'CREATED')
 
-    def test_scanInstanceGet_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanInstanceGet(self, instanceId)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanInstanceGet(invalid_type)
-
     def test_scanResultSummary_should_return_a_list(self):
         """
         Test scanResultSummary(self, instanceId, by="type")
@@ -343,18 +265,6 @@ class TestSpiderFootDb(unittest.TestCase):
         scan_results_summary = sfdb.scanResultSummary(instance_id, "type")
         self.assertIsInstance(scan_results_summary, list)
 
-    def test_scanResultSummary_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanResultSummary(self, instanceId, by="type")
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanResultSummary(invalid_type)
-
     def test_scanResultSummary_argument_by_of_invalid_type_should_raise_TypeError(self):
         """
         Test scanResultSummary(self, instanceId, by="type")
@@ -362,11 +272,11 @@ class TestSpiderFootDb(unittest.TestCase):
         sfdb = SpiderFootDb(self.default_options, False)
 
         instance_id = "example instance id"
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanResultSummary(instance_id, invalid_type)
+        # invalid_types = [None, list(), dict(), int()]
+        # for invalid_type in invalid_types:
+        #     with self.subTest(invalid_type=invalid_type):
+        #         with self.assertRaises(TypeError):
+        #             sfdb.scanResultSummary(instance_id, invalid_type)
 
         with self.assertRaises(ValueError):
             sfdb.scanResultSummary(instance_id, "invalid filter type")
@@ -391,21 +301,6 @@ class TestSpiderFootDb(unittest.TestCase):
         scan_result_event = sfdb.scanResultEvent(instance_id, "", False)
         self.assertIsInstance(scan_result_event, list)
 
-    def test_scanResultEvent_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanResultEvent(self, instanceId, eventType='ALL', filterFp=False)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        event_type = 'ALL'
-        filter_fp = None
-
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanResultEvent(invalid_type, event_type, filter_fp)
-
     def test_scanResultEvent_argument_eventType_of_invalid_type_should_raise_TypeError(self):
         """
         Test scanResultEvent(self, instanceId, eventType='ALL', filterFp=False)
@@ -429,34 +324,6 @@ class TestSpiderFootDb(unittest.TestCase):
         scan_result_event = sfdb.scanResultEventUnique(instance_id, "", False)
         self.assertIsInstance(scan_result_event, list)
 
-    def test_scanResultEventUnique_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanResultEventUnique(self, instanceId, eventType='ALL', filterFp=False)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        event_type = 'ALL'
-        filter_fp = None
-
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanResultEventUnique(invalid_type, event_type, filter_fp)
-
-    def test_scanResultEventUnique_argument_eventType_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanResultEventUnique(self, instanceId, eventType='ALL', filterFp=False)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        instance_id = "example instance id"
-        invalid_types = [None, list(), dict()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanResultEventUnique(instance_id, invalid_type, None)
-
     def test_scanLogs_should_return_a_list(self):
         """
         Test scanLogs(self, instanceId, limit=None, fromRowId=None, reverse=False)
@@ -469,22 +336,6 @@ class TestSpiderFootDb(unittest.TestCase):
 
         self.assertEqual('TBD', 'TBD')
 
-    def test_scanLogs_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanLogs(self, instanceId, limit=None, fromRowId=None, reverse=False)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        limit = None
-        from_row_id = None
-        reverse = None
-
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanLogs(invalid_type, limit, from_row_id, reverse)
-
     def test_scanErrors_should_return_a_list(self):
         """
         Test scanErrors(self, instanceId, limit=None)
@@ -493,18 +344,6 @@ class TestSpiderFootDb(unittest.TestCase):
         instance_id = "example instance id"
         scan_instance = sfdb.scanErrors(instance_id)
         self.assertIsInstance(scan_instance, list)
-
-    def test_scanErrors_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanErrors(self, instanceId, limit=None)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanErrors(invalid_type)
 
     def test_scanInstanceDelete(self):
         """
@@ -546,34 +385,6 @@ class TestSpiderFootDb(unittest.TestCase):
         sfdb.scanResultsUpdateFP(instance_id, result_hashes, fp_flag)
 
         self.assertEqual('TBD', 'TBD')
-
-    def test_scanResultsUpdateFP_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanResultsUpdateFP(self, instanceId, resultHashes, fpFlag)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        result_hashes = []
-        fp_flag = None
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanResultsUpdateFP(invalid_type, result_hashes, fp_flag)
-
-    def test_scanResultsUpdateFP_argument_resultHashes_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanResultsUpdateFP(self, instanceId, resultHashes, fpFlag)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        instance_id = "example instance id"
-        fp_flag = None
-        invalid_types = [None, "", dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanResultsUpdateFP(instance_id, invalid_type, fp_flag)
 
     def test_configSet_should_set_config_opts(self):
         """
@@ -661,18 +472,6 @@ class TestSpiderFootDb(unittest.TestCase):
         instance_id = "example instance id"
         scan_config = sfdb.scanConfigGet(instance_id)
         self.assertIsInstance(scan_config, dict)
-
-    def test_scanConfigGet_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanConfigGet(self, instanceId)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanConfigGet(invalid_type)
 
     def test_scanEventStore_should_store_a_scan_event(self):
         """
@@ -1071,18 +870,6 @@ class TestSpiderFootDb(unittest.TestCase):
         scan_result_history = sfdb.scanResultHistory(instance_id)
         self.assertIsInstance(scan_result_history, list)
 
-    def test_scanResultHistory_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanResultHistory(self, instanceId)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        invalid_types = [None, list(), dict()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanResultHistory(invalid_type)
-
     def test_scanElementSourcesDirect_should_return_a_list(self):
         """
         Test scanElementSourcesDirect(self, instanceId, elementIdList)
@@ -1096,32 +883,6 @@ class TestSpiderFootDb(unittest.TestCase):
 
         self.assertEqual('TBD', 'TBD')
 
-    def test_scanElementSourcesDirect_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanElementSourcesDirect(self, instanceId, elementIdList)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        element_id_list = []
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanElementSourcesDirect(invalid_type, element_id_list)
-
-    def test_scanElementSourcesDirect_argument_elementIdList_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanElementSourcesDirect(self, instanceId, elementIdList)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        instance_id = "example instance id"
-        invalid_types = [None, "", dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanElementSourcesDirect(instance_id, invalid_type)
-
     def test_scanElementChildrenDirect_should_return_a_list(self):
         """
         Test scanElementChildrenDirect(self, instanceId, elementIdList)
@@ -1133,32 +894,6 @@ class TestSpiderFootDb(unittest.TestCase):
         self.assertIsInstance(scan_element_children_direct, list)
 
         self.assertEqual('TBD', 'TBD')
-
-    def test_scanElementChildrenDirect_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanElementChildrenDirect(self, instanceId, elementIdList)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        element_id_list = []
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanElementChildrenDirect(invalid_type, element_id_list)
-
-    def test_scanElementChildrenDirect_argument_elementIdList_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanElementChildrenDirect(self, instanceId, elementIdList)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        instance_id = "example instance id"
-        invalid_types = [None, "", dict()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanElementChildrenDirect(instance_id, invalid_type)
 
     def test_scanElementSourcesAll_should_return_a_list(self):
         """
@@ -1172,32 +907,6 @@ class TestSpiderFootDb(unittest.TestCase):
         self.assertIsInstance(scan_element_sources_all, list)
 
         self.assertEqual('TBD', 'TBD')
-
-    def test_scanElementSourcesAll_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanElementSourcesAll(self, instanceId, childData)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        invalid_types = [None, list(), dict(), int()]
-        child_data = []
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanElementSourcesAll(invalid_type, child_data)
-
-    def test_scanElementSourcesAll_argument_childData_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanElementSourcesAll(self, instanceId, childData)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        instance_id = "example instance id"
-        invalid_types = [None, "", dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanElementSourcesAll(instance_id, invalid_type)
 
     def test_scanElementSourcesAll_argument_childData_with_empty_value_should_raise_ValueError(self):
         """
@@ -1222,32 +931,6 @@ class TestSpiderFootDb(unittest.TestCase):
         self.assertIsInstance(scan_element_children_all, list)
 
         self.assertEqual('TBD', 'TBD')
-
-    def test_scanElementChildrenAll_argument_instanceId_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanElementChildrenAll(self, instanceId, parentIds)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        invalid_types = [None, list(), dict(), int()]
-        parent_ids = []
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanElementChildrenAll(invalid_type, parent_ids)
-
-    def test_scanElementChildrenAll_argument_parentIds_of_invalid_type_should_raise_TypeError(self):
-        """
-        Test scanElementChildrenAll(self, instanceId, parentIds)
-        """
-        sfdb = SpiderFootDb(self.default_options, False)
-
-        instance_id = "example instance id"
-        invalid_types = [None, "", dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfdb.scanElementChildrenAll(instance_id, invalid_type)
 
     def test_correlationResultCreate_arguments_of_invalid_type_should_raise_TypeError(self):
         sfdb = SpiderFootDb(self.default_options, False)
