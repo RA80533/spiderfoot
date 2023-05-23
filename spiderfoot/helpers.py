@@ -13,7 +13,6 @@ import typing
 import urllib.parse
 import uuid
 from pathlib import Path
-from importlib import resources
 
 import networkx as nx
 from bs4 import BeautifulSoup, SoupStrainer
@@ -351,7 +350,7 @@ def dictionaryWordsFromWordlists(wordlists: typing.Optional[typing.List[str]] = 
 
     for d in wordlists:
         try:
-            with resources.open_text('spiderfoot.dicts.ispell', f"{d}.dict", errors='ignore') as dict_file:
+            with open(f'spiderfoot/dicts/ispell/{d}.dict', errors='ignore') as dict_file:
                 for w in dict_file.readlines():
                     words.add(w.strip().lower().split('/')[0])
         except BaseException as e:
@@ -379,7 +378,7 @@ def humanNamesFromWordlists(wordlists: typing.Optional[typing.List[str]] = None)
 
     for d in wordlists:
         try:
-            with resources.open_text('spiderfoot.dicts.ispell', f"{d}.dict", errors='ignore') as dict_file:
+            with open(f'spiderfoot/dicts/ispell/{d}.dict', errors='ignore') as dict_file:
                 for w in dict_file.readlines():
                     words.add(w.strip().lower().split('/')[0])
         except BaseException as e:
@@ -407,7 +406,7 @@ def usernamesFromWordlists(wordlists: typing.Optional[typing.List[str]] = None) 
 
     for d in wordlists:
         try:
-            with resources.open_text('spiderfoot.dicts', f"{d}.txt", errors='ignore') as dict_file:
+            with open(f'spiderfoot/dicts/{d}.txt', errors='ignore') as dict_file:
                 for w in dict_file.readlines():
                     words.add(w.strip().lower().split('/')[0])
         except BaseException as e:
