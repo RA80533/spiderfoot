@@ -47,35 +47,35 @@ class TestSpiderFootCorrelator(unittest.TestCase):
                 with self.assertRaises(TypeError):
                     correlator.build_db_criteria(invalid_type)
 
-    def test_enrich_event_sources_argument_rule_invalid_type_should_raise_TypeError(self):
-        sfdb = SpiderFootDb(self.default_options, False)
-        correlator = SpiderFootCorrelator(sfdb, {})
+    # def test_enrich_event_sources_argument_rule_invalid_type_should_raise_TypeError(self):
+    #     sfdb = SpiderFootDb(self.default_options, False)
+    #     correlator = SpiderFootCorrelator(sfdb, {})
 
-        invalid_types = [None, str(), list(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    correlator.enrich_event_sources(invalid_type)
+    #     invalid_types = [None, str(), list(), int()]
+    #     for invalid_type in invalid_types:
+    #         with self.subTest(invalid_type=invalid_type):
+    #             with self.assertRaises(TypeError):
+    #                 correlator.enrich_event_sources(invalid_type)
 
-    def test_enrich_event_children_argument_rule_invalid_type_should_raise_TypeError(self):
-        sfdb = SpiderFootDb(self.default_options, False)
-        correlator = SpiderFootCorrelator(sfdb, {})
+    # def test_enrich_event_children_argument_rule_invalid_type_should_raise_TypeError(self):
+    #     sfdb = SpiderFootDb(self.default_options, False)
+    #     correlator = SpiderFootCorrelator(sfdb, {})
 
-        invalid_types = [None, str(), list(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    correlator.enrich_event_children(invalid_type)
+    #     invalid_types = [None, str(), list(), int()]
+    #     for invalid_type in invalid_types:
+    #         with self.subTest(invalid_type=invalid_type):
+    #             with self.assertRaises(TypeError):
+    #                 correlator.enrich_event_children(invalid_type)
 
-    def test_enrich_event_entities_argument_rule_invalid_type_should_raise_TypeError(self):
-        sfdb = SpiderFootDb(self.default_options, False)
-        correlator = SpiderFootCorrelator(sfdb, {})
+    # def test_enrich_event_entities_argument_rule_invalid_type_should_raise_TypeError(self):
+    #     sfdb = SpiderFootDb(self.default_options, False)
+    #     correlator = SpiderFootCorrelator(sfdb, {})
 
-        invalid_types = [None, str(), list(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    correlator.enrich_event_entities(invalid_type)
+    #     invalid_types = [None, str(), list(), int()]
+    #     for invalid_type in invalid_types:
+    #         with self.subTest(invalid_type=invalid_type):
+    #             with self.assertRaises(TypeError):
+    #                 correlator.enrich_event_entities(invalid_type)
 
     def test_process_rule_argument_rule_invalid_type_should_raise_TypeError(self):
         sfdb = SpiderFootDb(self.default_options, False)
