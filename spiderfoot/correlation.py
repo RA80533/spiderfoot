@@ -28,9 +28,9 @@ class CorrelationEvent:
     module: str  # row[3]
     id: str  # row[8]
     entity_type: str  # self.type_entity_map[row[4]]
-    source: list[_EventSource] = []
-    child: list[_EventChild] = []
-    entity: list[_EventEntity] = []
+    source: list[_EventSource]
+    child: list[_EventChild]
+    entity: list[_EventEntity]
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
@@ -464,6 +464,9 @@ class SpiderFootCorrelator:
                 module=row.c_module,
                 id=row.c_hash,
                 entity_type=self.type_entity_map[row.c_type],
+                source=[],
+                child=[],
+                entity=[],
             )
 
         # You need to fetch sources if you need entities, since
