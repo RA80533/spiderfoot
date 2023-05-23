@@ -41,7 +41,10 @@ RUN apk add --no-cache gcc git curl python3 python3-dev py3-pip swig tinyxml-dev
  openjpeg-dev zlib-dev cargo rust --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin":$PATH
-COPY $REQUIREMENTS requirements.txt ./
+WORKDIR /home/spiderfoot/test
+COPY test/requirements.txt ./
+WORKDIR /home/spiderfoot
+COPY requirements.txt ./
 RUN ls
 RUN echo "$REQUIREMENTS"
 RUN pip3 install -U pip
