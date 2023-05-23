@@ -299,26 +299,16 @@ class SpiderFootCorrelator:
             self.log.debug(f"Getting sources for {len(chunk)} events")
             source_data = self.dbh.scanElementSourcesDirect(self.scanId, chunk)
             for row in source_data:
-                _row_2 = row[2]  # s."data" AS "source_data"
-                _row_8 = row[8]  # c."hash"
-                _row_9 = row[9]  # c."source_event_hash"
-                _row_15 = row[15]  # s."type"
-                _row_16 = row[16]  # s."module"
-                assert isinstance(_row_2, str)
-                assert isinstance(_row_8, str)
-                assert isinstance(_row_9, str)
-                assert isinstance(_row_15, str)
-                assert isinstance(_row_16, str)
-                _events_key: str = _row_8
-                _events_value__entity_type: str = self.type_entity_map[_row_15]
-                _events_value: _EventSource = _EventSource(
-                    type=_row_15,
-                    data=_row_2,
-                    module=_row_16,
-                    id=_row_9,
-                    entity_type=_events_value__entity_type,
+                assert row.source_data is not None
+                events[row.c_hash].source.append(
+                    _EventSource(
+                        type=row.s_type,
+                        data=row.source_data,
+                        module=row.s_module,
+                        id=row.c_source_event_hash,
+                        entity_type=self.type_entity_map[row.s_type],
+                    ),
                 )
-                events[_events_key].source.append(_events_value)
 
     # 2 in spiderfoot/correlation.py
     # 1 in test/unit/spiderfoot/test_spiderfootcorrelator.py
@@ -342,24 +332,15 @@ class SpiderFootCorrelator:
             self.log.debug(f"Getting children for {len(chunk)} events")
             child_data = self.dbh.scanResultEvent(self.scanId, sourceId=chunk)
             for row in child_data:
-                _row_1 = row[1]  # c."data"
-                _row_3 = row[3]  # c."module"
-                _row_4 = row[4]  # c."type"
-                _row_8 = row[8]  # c."hash"
-                _row_9 = row[9]  # c."source_event_hash"
-                assert isinstance(_row_1, str)
-                assert isinstance(_row_3, str)
-                assert isinstance(_row_4, str)
-                assert isinstance(_row_8, str)
-                assert isinstance(_row_9, str)
-                _events_key: str = _row_9
-                _events_value: _EventChild = _EventChild(
-                    type=_row_4,
-                    data=_row_1,
-                    module=_row_3,
-                    id=_row_8,
+                assert row.c_data is not None
+                events[row.c_source_event_hash].child.append(
+                    _EventChild(
+                        type=row.c_type,
+                        data=row.c_data,
+                        module=row.c_module,
+                        id=row.c_hash,
+                    ),
                 )
-                events[_events_key].child.append(_events_value)
 
     # 2 in spiderfoot/correlation.py
     # 1 in test/unit/spiderfoot/test_spiderfootcorrelator.py
@@ -443,7 +424,13 @@ class SpiderFootCorrelator:
             entity_missing = deepcopy(new_missing)
 
     # 1 in spiderfoot/correlation.py
-    def collect_from_db(self, matchrule: Matchrule, fetchChildren: bool, fetchSources: bool, fetchEntities: bool) -> list[CorrelationEvent]:
+    def collect_from_db(
+        self,
+        matchrule: Matchrule,
+        fetchChildren: bool,
+        fetchSources: bool,
+        fetchEntities: bool,
+    ) -> list[CorrelationEvent]:
         """Collect event values from database.
 
         Args:
@@ -455,6 +442,8 @@ class SpiderFootCorrelator:
         Returns:
             list: event values
         """
+        assert self.dbh is not None
+        assert self.scanId is not None
 
         events: dict[str, CorrelationEvent] = dict()
 
@@ -468,24 +457,14 @@ class SpiderFootCorrelator:
         query_args['instanceId'] = self.scanId
         self.log.debug(f"db query: {query_args}")
         for row in self.dbh.scanResultEvent(**query_args):
-            _row_1 = row[1]  # c."data"
-            _row_3 = row[3]  # c."module"
-            _row_4 = row[4]  # c."type"
-            _row_8 = row[8]  # c."hash"
-            assert isinstance(_row_1, str)
-            assert isinstance(_row_3, str)
-            assert isinstance(_row_4, str)
-            assert isinstance(_row_8, str)
-            _events_key: str = _row_8
-            _events_value__entity_type: str = self.type_entity_map[_row_4]
-            _events_value: CorrelationEvent = CorrelationEvent(
-                type=_row_4,
-                data=_row_1,
-                module=_row_3,
-                id=_row_8,
-                entity_type=_events_value__entity_type,
+            assert row.c_data is not None
+            events[row.c_hash] = CorrelationEvent(
+                type=row.c_type,
+                data=row.c_data,
+                module=row.c_module,
+                id=row.c_hash,
+                entity_type=self.type_entity_map[row.c_type],
             )
-            events[_events_key] = _events_value
 
         # You need to fetch sources if you need entities, since
         # the source will often be the entity.
