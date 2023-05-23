@@ -3,7 +3,6 @@ from __future__ import annotations
 import dataclasses
 import logging
 import re
-import typing
 import yaml
 from copy import deepcopy
 
