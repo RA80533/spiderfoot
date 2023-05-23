@@ -271,7 +271,7 @@ class SpiderFootPlugin():
 
         return self.__scanId__
 
-    def getTarget(self) -> str:
+    def getTarget(self) -> SpiderFootTarget:
         """Gets the current target this module is acting against.
 
         Returns:
