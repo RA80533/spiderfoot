@@ -87,13 +87,7 @@ class SpiderFootTarget():
             value (str): Target alias value
             typeName (str): Target alias data type
         """
-        if not isinstance(value, (str, bytes)):
-            return
-
         if not value:
-            return
-
-        if not isinstance(typeName, (str, bytes)):
             return
 
         if not typeName:
