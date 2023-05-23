@@ -19,6 +19,7 @@ import re
 import sqlite3
 import threading
 import time
+import typing
 
 
 class SpiderFootDb:
@@ -808,16 +809,86 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching correlation list") from e
 
+    @typing.final
+    class ScanResultEvent(typing.NamedTuple):
+        generated: int
+        c_data: str | None
+        source_data: str | None
+        c_module: str
+        c_type: str
+        c_confidence: int
+        c_visibility: int
+        c_risk: int
+        c_hash: str
+        c_source_event_hash: str
+        t_event_descr: str
+        t_event_type: str
+        s_scan_instance_id: str
+        fp: int
+        parent_fp: int
+        
+        @staticmethod
+        def from_row(
+            generated: typing.Any,
+            c_data: typing.Any,
+            source_data: typing.Any,
+            c_module: typing.Any,
+            c_type: typing.Any,
+            c_confidence: typing.Any,
+            c_visibility: typing.Any,
+            c_risk: typing.Any,
+            c_hash: typing.Any,
+            c_source_event_hash: typing.Any,
+            t_event_descr: typing.Any,
+            t_event_type: typing.Any,
+            s_scan_instance_id: typing.Any,
+            fp: typing.Any,
+            parent_fp: typing.Any,
+        ) -> SpiderFootDb.ScanResultEvent:
+            assert type(generated) is int
+            assert type(c_data) is str or c_data is None
+            assert type(source_data) is str or source_data is None
+            assert type(c_module) is str
+            assert type(c_type) is str
+            assert type(c_confidence) is int
+            assert type(c_visibility) is int
+            assert type(c_risk) is int
+            assert type(c_hash) is str
+            assert type(c_source_event_hash) is str
+            assert type(t_event_descr) is str
+            assert type(t_event_type) is str
+            assert type(s_scan_instance_id) is str
+            assert type(fp) is int
+            assert type(parent_fp) is int
+
+            return SpiderFootDb.ScanResultEvent(
+                generated,
+                c_data,
+                source_data,
+                c_module,
+                c_type,
+                c_confidence,
+                c_visibility,
+                c_risk,
+                c_hash,
+                c_source_event_hash,
+                t_event_descr,
+                t_event_type,
+                s_scan_instance_id,
+                fp,
+                parent_fp,
+            )
+
     def scanResultEvent(
         self,
         instanceId: str,
         eventType: str = 'ALL',
-        srcModule: str = None,
-        data: list = None,
-        sourceId: list = None,
-        correlationId: str = None,
+        srcModule: str | None = None,
+        data: list[str] | None = None,
+        sourceId: list[str] | None = None,
+        correlationId: str | None = None,
         filterFp: bool = False
-    ) -> list:
+    ) -> list[SpiderFootDb.ScanResultEvent]:
         """Obtain the data for a scan and event type.
 
         Args:
@@ -847,7 +918,7 @@ class SpiderFootDb:
             c.false_positive as 'fp', s.false_positive as 'parent_fp' \
             FROM tbl_scan_results c, tbl_scan_results s, tbl_event_types t "
 
-        if correlationId:
+        if correlationId is not None:
             qry += ", tbl_scan_correlation_results_events ce "
 
         qry += "WHERE c.scan_instance_id = ? AND c.source_event_hash = s.hash AND \
@@ -855,7 +926,7 @@ class SpiderFootDb:
 
         qvars = [instanceId]
 
-        if correlationId:
+        if correlationId is not None:
             qry += " AND ce.event_hash = c.hash AND ce.correlation_id = ?"
             qvars.append(correlationId)
 
@@ -870,7 +941,7 @@ class SpiderFootDb:
         if filterFp:
             qry += " AND c.false_positive <> 1"
 
-        if srcModule:
+        if srcModule is not None:
             if isinstance(srcModule, list):
                 qry += " AND c.module in (" + ','.join(['?'] * len(srcModule)) + ")"
                 qvars.extend(srcModule)
@@ -878,7 +949,7 @@ class SpiderFootDb:
                 qry += " AND c.module = ?"
                 qvars.append(srcModule)
 
-        if data:
+        if data is not None:
             if isinstance(data, list):
                 qry += " AND c.data in (" + ','.join(['?'] * len(data)) + ")"
                 qvars.extend(data)
@@ -886,7 +957,7 @@ class SpiderFootDb:
                 qry += " AND c.data = ?"
                 qvars.append(data)
 
-        if sourceId:
+        if sourceId is not None:
             if isinstance(sourceId, list):
                 qry += " AND c.source_event_hash in (" + ','.join(['?'] * len(sourceId)) + ")"
                 qvars.extend(sourceId)
@@ -896,12 +967,20 @@ class SpiderFootDb:
 
         qry += " ORDER BY c.data"
 
+        rows = []
         with self.dbhLock:
             try:
                 self.dbh.execute(qry, qvars)
-                return self.dbh.fetchall()
+                rows = self.dbh.fetchall()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching result events") from e
+        
+        results: list[SpiderFootDb.ScanResultEvent] = []
+        for row in rows:
+            assert isinstance(row, tuple)
+            results.append(self.ScanResultEvent.from_row(*row))
+
+        return results
 
     def scanResultEventUnique(self, instanceId: str, eventType: str = 'ALL', filterFp: bool = False) -> list:
         """Obtain a unique list of elements.
@@ -1357,7 +1436,89 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError(f"SQL error encountered when fetching history for scan {instanceId}") from e
 
-    def scanElementSourcesDirect(self, instanceId: str, elementIdList: list) -> list:
+    @typing.final
+    class ScanElementSourcesDirect(typing.NamedTuple):
+        generated: int
+        c_data: str | None
+        source_data: str | None
+        c_module: str
+        c_type: str
+        c_confidence: int
+        c_visibility: int
+        c_risk: int
+        c_hash: str
+        c_source_event_hash: str
+        t_event_descr: str
+        t_event_type: str
+        s_scan_instance_id: str
+        fp: int
+        parent_fp: int
+        s_type: str
+        s_module: str
+        source_entity_type: str
+        
+        @staticmethod
+        def from_row(
+            generated: typing.Any,
+            c_data: typing.Any,
+            source_data: typing.Any,
+            c_module: typing.Any,
+            c_type: typing.Any,
+            c_confidence: typing.Any,
+            c_visibility: typing.Any,
+            c_risk: typing.Any,
+            c_hash: typing.Any,
+            c_source_event_hash: typing.Any,
+            t_event_descr: typing.Any,
+            t_event_type: typing.Any,
+            s_scan_instance_id: typing.Any,
+            fp: typing.Any,
+            parent_fp: typing.Any,
+            s_type: typing.Any,
+            s_module: typing.Any,
+            source_entity_type: typing.Any,
+        ) -> SpiderFootDb.ScanElementSourcesDirect:
+            assert type(generated) is int
+            assert type(c_data) is str or c_data is None
+            assert type(source_data) is str or source_data is None
+            assert type(c_module) is str
+            assert type(c_type) is str
+            assert type(c_confidence) is int
+            assert type(c_visibility) is int
+            assert type(c_risk) is int
+            assert type(c_hash) is str
+            assert type(c_source_event_hash) is str
+            assert type(t_event_descr) is str
+            assert type(t_event_type) is str
+            assert type(s_scan_instance_id) is str
+            assert type(fp) is int
+            assert type(parent_fp) is int
+            assert type(s_type) is str
+            assert type(s_module) is str
+            assert type(source_entity_type) is str
+
+            return SpiderFootDb.ScanElementSourcesDirect(
+                generated,
+                c_data,
+                source_data,
+                c_module,
+                c_type,
+                c_confidence,
+                c_visibility,
+                c_risk,
+                c_hash,
+                c_source_event_hash,
+                t_event_descr,
+                t_event_type,
+                s_scan_instance_id,
+                fp,
+                parent_fp,
+                s_type,
+                s_module,
+                source_entity_type,
+            )
+
+    def scanElementSourcesDirect(self, instanceId: str, elementIdList: list[str]) -> list[SpiderFootDb.ScanElementSourcesDirect]:
         """Get the source IDs, types and data for a set of IDs.
 
         Args:
@@ -1371,7 +1532,7 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        hashIds = []
+        hashIds: list[str] = []
         for hashId in elementIdList:
             if not hashId:
                 continue
@@ -1394,12 +1555,20 @@ class SpiderFootDb:
             t.event = c.type AND c.hash in ('%s')" % "','".join(hashIds)
         qvars = [instanceId]
 
+        rows = []
         with self.dbhLock:
             try:
                 self.dbh.execute(qry, qvars)
-                return self.dbh.fetchall()
+                rows = self.dbh.fetchall()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when getting source element IDs") from e
+
+        results: list[SpiderFootDb.ScanElementSourcesDirect] = []
+        for row in rows:
+            assert isinstance(row, tuple)
+            results.append(self.ScanElementSourcesDirect.from_row(*row))
+
+        return results
 
     def scanElementChildrenDirect(self, instanceId: str, elementIdList: list) -> list:
         """Get the child IDs, types and data for a set of IDs.
