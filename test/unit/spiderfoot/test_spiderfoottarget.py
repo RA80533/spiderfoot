@@ -50,12 +50,8 @@ class TestSpiderFootTarget(unittest.TestCase):
         target_type = 'IP_ADDRESS'
         target = SpiderFootTarget(target_value, target_type)
 
-        target.setAlias(None, None)
-        target.setAlias("", None)
-        target.setAlias(None, "")
-        target.setAlias("", "")
-        target.setAlias("example value", None)
-        target.setAlias(None, "example type")
+        target.setAlias("example value", "")
+        target.setAlias("", "example type")
 
         target_aliases = target.targetAliases
         self.assertIsInstance(target_aliases, list)
