@@ -150,10 +150,7 @@ class SpiderFootTarget():
 
         names: typing.List[str] = list()
         for name in e:
-            if isinstance(name, bytes):
-                names.append(name.decode("utf-8"))
-            else:
-                names.append(name)
+            names.append(name)
 
         return names
 
