@@ -54,6 +54,7 @@ class SpiderFootTarget():
 
     # 9 in spiderfoot/target.py
     # 4 in test/unit/test_spiderfoottarget.py
+    # 1 in spiderfoot/plugin.py
     @property
     def targetType(self) -> str:
         return self._targetType
@@ -66,7 +67,8 @@ class SpiderFootTarget():
         self._targetType = targetType
 
     # 9 in spiderfoot/target.py
-    # 5 in test/unit/test_spiderfoottarget.py
+    # 4 in test/unit/test_spiderfoottarget.py
+    # 2 in test/unit/test_spiderfootplugin.py
     # 1 in sfscan.py
     @property
     def targetValue(self) -> str:
@@ -135,6 +137,7 @@ class SpiderFootTarget():
 
     # 2 in spiderfoot/target.py
     # 1 in test/unit/test_spiderfoottarget.py
+    # … 8 others
     def getNames(self) -> typing.List[str]:
         """Get all domains associated with the target.
 
@@ -174,6 +177,7 @@ class SpiderFootTarget():
 
     # 15 in test/unit/test_spiderfoottarget.py
     #  1 in spiderfoot/target.py
+    # … 118 others
     def matches(self, value: str, includeParents: bool = False, includeChildren: bool = True) -> bool:
         """Check whether the supplied value is "tightly" related to the original target.
 
