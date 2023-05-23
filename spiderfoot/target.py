@@ -12,6 +12,13 @@ else:
     TargetAlias = typing.Dict[str, str]
 
 
+# 34 in test/unit/test_spiderfoottarget.py
+#  5 in test/unit/test_spiderfootplugin.py
+#  3 in sfscan.py
+#  3 in spiderfoot/plugin.py
+#  1 in spiderfoot/__init__.py
+#  1 in spiderfoot/target.py
+# … 661 others
 class SpiderFootTarget():
     """SpiderFoot target.
 
@@ -29,6 +36,11 @@ class SpiderFootTarget():
     _targetValue: str
     _targetAliases: typing.List[TargetAlias]
 
+    # 32 in test/unit/test_spiderfoottarget.py
+    #  4 in test/unit/test_spiderfootplugin.py
+    #  1 in sfscan.py
+    #  1 in spiderfoot/target.py
+    # … 353 others
     def __init__(self, targetValue: str, typeName: str) -> None:
         """Initialize SpiderFoot target.
 
@@ -40,6 +52,8 @@ class SpiderFootTarget():
         self.targetValue = targetValue
         self.targetAliases = list()
 
+    # 9 in spiderfoot/target.py
+    # 4 in test/unit/test_spiderfoottarget.py
     @property
     def targetType(self) -> str:
         return self._targetType
@@ -51,6 +65,9 @@ class SpiderFootTarget():
 
         self._targetType = targetType
 
+    # 9 in spiderfoot/target.py
+    # 5 in test/unit/test_spiderfoottarget.py
+    # 1 in sfscan.py
     @property
     def targetValue(self) -> str:
         return self._targetValue
@@ -62,6 +79,8 @@ class SpiderFootTarget():
 
         self._targetValue = targetValue
 
+    # 7 in spiderfoot/target.py
+    # 4 in test/unit/test_spiderfoottarget.py
     @property
     def targetAliases(self) -> typing.List[TargetAlias]:
         return self._targetAliases
@@ -70,6 +89,8 @@ class SpiderFootTarget():
     def targetAliases(self, value: typing.List[TargetAlias]) -> None:
         self._targetAliases = value
 
+    # 5 in test/unit/test_spiderfoottarget.py
+    # 1 in spiderfoot/target.py
     def setAlias(self, value: str, typeName: str) -> None:
         """Specify other hostnames, IPs, etc. that are aliases for this target.
 
@@ -95,6 +116,8 @@ class SpiderFootTarget():
 
         self.targetAliases.append(alias)
 
+    # 4 in spiderfoot/target.py
+    # 2 in test/unit/test_spiderfoottarget.py
     def _getEquivalents(self, typeName: str) -> typing.List[str]:
         """Get all aliases of the specfied target data type.
 
@@ -110,6 +133,8 @@ class SpiderFootTarget():
                 ret.append(item['value'].lower())
         return ret
 
+    # 2 in spiderfoot/target.py
+    # 1 in test/unit/test_spiderfoottarget.py
     def getNames(self) -> typing.List[str]:
         """Get all domains associated with the target.
 
@@ -129,6 +154,8 @@ class SpiderFootTarget():
 
         return names
 
+    # 2 in spiderfoot/target.py
+    # 2 in test/unit/test_spiderfoottarget.py
     def getAddresses(self) -> typing.List[str]:
         """Get all IP subnet or IP address aliases associated with the target.
 
@@ -145,6 +172,8 @@ class SpiderFootTarget():
 
         return e
 
+    # 15 in test/unit/test_spiderfoottarget.py
+    #  1 in spiderfoot/target.py
     def matches(self, value: str, includeParents: bool = False, includeChildren: bool = True) -> bool:
         """Check whether the supplied value is "tightly" related to the original target.
 
