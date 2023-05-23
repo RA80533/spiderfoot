@@ -46,9 +46,6 @@ class SpiderFootTarget():
 
     @targetType.setter
     def targetType(self, targetType: str) -> None:
-        if not isinstance(targetType, str):
-            raise TypeError(f"targetType is {type(targetType)}; expected str()")
-
         if targetType not in self._validTypes:
             raise ValueError(f"targetType value is {targetType}; expected {self._validTypes}")
 
@@ -60,8 +57,6 @@ class SpiderFootTarget():
 
     @targetValue.setter
     def targetValue(self, targetValue: str) -> None:
-        if not isinstance(targetValue, str):
-            raise TypeError(f"targetValue is {type(targetValue)}; expected str()")
         if not targetValue:
             raise ValueError("targetValue value is blank")
 
@@ -174,12 +169,6 @@ class SpiderFootTarget():
         Returns:
             bool: whether the value matches the target
         """
-        if not isinstance(value, str) and not isinstance(value, bytes):
-            return False
-
-        if isinstance(value, bytes):
-            value = value.decode("utf-8")
-
         if not value:
             return False
 
