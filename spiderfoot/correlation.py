@@ -6,6 +6,7 @@ import re
 import yaml
 from copy import deepcopy
 
+import dacite
 import netaddr
 
 from spiderfoot import SpiderFootDb
@@ -144,7 +145,7 @@ class SpiderFootCorrelator:
                 parsed_yaml = yaml.safe_load(ruleset[rule_id])
             except Exception as e:
                 raise SyntaxError(f"Unable to process a YAML correlation rule [{rule_id}]") from e
-            self.rules.append(Rule(**parsed_yaml))
+            self.rules.append(dacite.from_dict(Rule, parsed_yaml))
 
         # Strip any trailing newlines that may have creeped into meta name/description
         for rule in self.rules:
