@@ -23,7 +23,18 @@ import typing
 
 from .event import SpiderFootEvent
 
-
+# 46 in test/unit/spiderfoot/test_spiderfootdb.py
+# 36 in sfwebui.py
+#  9 in spiderfoot/db.py
+#  7 in test/unit/spiderfoot/test_spiderfootplugin.py
+#  5 in test/unit/spiderfoot/test_spiderfootcorrelator.py
+#  4 in sf.py
+#  3 in sfscan.py
+#  3 in spiderfoot/plugin.py
+#  3 in test/unit/test_modules.py
+#  2 in spiderfoot/correlation.py
+#  2 in spiderfoot/logger.py
+#  1 in spiderfoot/__init__.py
 class SpiderFootDb:
     """SpiderFoot database
 
@@ -33,12 +44,17 @@ class SpiderFootDb:
         dbhLock (_thread.RLock): thread lock on database handle
     """
 
+    # 57 in spiderfoot/db.py
+    #  2 in sfwebui.py
     dbh = None
+    # 19 in spiderfoot/db.py
     conn = None
 
+    # 33 in spiderfoot/db.py
     # Prevent multithread access to sqlite database
     dbhLock = threading.RLock()
 
+    # 3 in spiderfoot/db.py
     # Queries for creating the SpiderFoot database
     createSchemaQueries = [
         "PRAGMA journal_mode=WAL",
@@ -113,6 +129,7 @@ class SpiderFootDb:
         "CREATE INDEX idx_scan_correlation_events ON tbl_scan_correlation_results_events (correlation_id)"
     ]
 
+    # 1 in spiderfoot/db.py
     eventDetails = [
         ['ROOT', 'Internal SpiderFoot Root event', 1, 'INTERNAL'],
         ['ACCOUNT_EXTERNAL_OWNED', 'Account on External Site', 0, 'ENTITY'],
@@ -288,6 +305,16 @@ class SpiderFootDb:
         ['WIKIPEDIA_PAGE_EDIT', 'Wikipedia Page Edit', 0, 'DESCRIPTOR'],
     ]
 
+    # 44 in test/unit/spiderfoot/test_spiderfootdb.py
+    # 35 in sfwebui.py
+    #  5 in test/unit/spiderfoot/test_spiderfootplugin.py
+    #  4 in test/unit/spiderfoot/test_spiderfootcorrelator.py
+    #  3 in sf.py
+    #  2 in test/unit/test_modules.py
+    #  1 in sfscan.py
+    #  1 in spiderfoot/db.py
+    #  1 in spiderfoot/logger.py
+    #  1 in spiderfoot/plugin.py
     def __init__(self, opts: dict, init: bool = False) -> None:
         """Initialize database and create handle to the SQLite database file.
         Creates the database file if it does not exist.
@@ -379,6 +406,8 @@ class SpiderFootDb:
     # Back-end database operations
     #
 
+    # 2 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def create(self) -> None:
         """Create the database schema.
 
@@ -405,12 +434,16 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when setting up database") from e
 
+    # 1 in sfscan.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def close(self) -> None:
         """Close the database handle."""
 
         with self.dbhLock:
             self.dbh.close()
 
+    # 1 in sfwebui.py
     def vacuumDB(self) -> None:
         """Vacuum the database. Clears unused database file pages.
 
@@ -429,6 +462,9 @@ class SpiderFootDb:
                 raise IOError("SQL error encountered when vacuuming the database") from e
         return False
 
+    # 4 in test/unit/spiderfoot/test_spiderfootdb.py
+    # 1 in sfwebui.py
+    # 1 in spiderfoot/db.py
     def search(self, criteria: dict, filterFp: bool = False) -> list:
         """Search database.
 
@@ -509,6 +545,12 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching search results") from e
 
+    # 3 in sfwebui.py
+    # 2 in sf.py
+    # 2 in test/unit/test_modules.py
+    # 1 in spiderfoot/correlation.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def eventTypes(self) -> list:
         """Get event types.
 
@@ -527,6 +569,8 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when retrieving event types") from e
 
+    # 2 in spiderfoot/logger.py
+    # 1 in spiderfoot/db.py
     def scanLogEvents(self, batch: list) -> bool:
         """Logs a batch of events to the database.
 
@@ -573,6 +617,7 @@ class SpiderFootDb:
                     return False
         return True
 
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanLogEvent(self, instanceId: str, classification: str, message: str, component: str = None) -> None:
         """Log an event to the database.
 
@@ -609,6 +654,9 @@ class SpiderFootDb:
                 # log.critical(f"Unable to log event in DB due to lock: {e.args[0]}")
                 pass
 
+    # 5 in test/unit/spiderfoot/test_spiderfootdb.py
+    # 1 in sfscan.py
+    # 1 in spiderfoot/db.py
     def scanInstanceCreate(self, instanceId: str, scanName: str, scanTarget: str) -> None:
         """Store a scan instance in the database.
 
@@ -634,6 +682,11 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("Unable to create scan instance in database") from e
 
+    # 1 in sf.py
+    # 1 in sfscan.py
+    # 1 in sfwebui.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanInstanceSet(self, instanceId: str, started: str | None = None, ended: str | None = None, status: str | None = None) -> None:
         """Update the start time, end time or status (or all 3) of a scan instance.
 
@@ -673,6 +726,13 @@ class SpiderFootDb:
             except sqlite3.Error:
                 raise IOError("Unable to set information for the scan instance.") from None
 
+    # 18 in sfwebui.py
+    #  2 in sfscan.py
+    #  1 in sf.py
+    #  1 in spiderfoot/correlation.py
+    #  1 in spiderfoot/db.py
+    #  1 in spiderfoot/plugin.py
+    #  1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanInstanceGet(self, instanceId: str) -> list:
         """Return info about a scan instance (name, target, created, started, ended, status)
 
@@ -698,6 +758,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when retrieving scan instance") from e
 
+    # 3 in test/unit/spiderfoot/test_spiderfootdb.py
+    # 2 in sfwebui.py
+    # 1 in spiderfoot/db.py
     def scanResultSummary(self, instanceId: str, by: str = "type") -> list:
         """Obtain a summary of the results, filtered by event type, module or entity.
 
@@ -745,6 +808,8 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching result summary") from e
 
+    # 2 in sfwebui.py
+    # 1 in spiderfoot/db.py
     def scanCorrelationSummary(self, instanceId: str, by: str = "rule") -> list:
         """Obtain a summary of the correlations, filtered by rule or risk
 
@@ -783,6 +848,8 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching correlation summary") from e
 
+    # 2 in sfwebui.py
+    # 1 in spiderfoot/db.py
     def scanCorrelationList(self, instanceId: str) -> list:
         """Obtain a list of the correlations from a scan
 
@@ -811,6 +878,7 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching correlation list") from e
 
+    # 6 in spiderfoot/db.py
     @typing.final
     class ScanResultEvent(typing.NamedTuple):
         generated: int
@@ -881,6 +949,10 @@ class SpiderFootDb:
                 parent_fp,
             )
 
+    # 7 in sfwebui.py
+    # 2 in spiderfoot/correlation.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanResultEvent(
         self,
         instanceId: str,
@@ -984,6 +1056,9 @@ class SpiderFootDb:
 
         return results
 
+    # 1 in sfwebui.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanResultEventUnique(self, instanceId: str, eventType: str = 'ALL', filterFp: bool = False) -> list:
         """Obtain a unique list of elements.
 
@@ -1019,6 +1094,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching unique result events") from e
 
+    # 2 in sfwebui.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanLogs(self, instanceId: str, limit: int = None, fromRowId: int = 0, reverse: bool = False) -> list:
         """Get scan logs.
 
@@ -1061,6 +1139,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching scan logs") from e
 
+    # 1 in sfwebui.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanErrors(self, instanceId: str, limit: int = 0) -> list:
         """Get scan errors.
 
@@ -1091,6 +1172,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching scan errors") from e
 
+    # 1 in sfwebui.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanInstanceDelete(self, instanceId: str) -> bool:
         """Delete a scan instance.
 
@@ -1122,6 +1206,9 @@ class SpiderFootDb:
 
         return True
 
+    # 1 in sfwebui.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanResultsUpdateFP(self, instanceId: str, resultHashes: list, fpFlag: int) -> bool:
         """Set the false positive flag for a result.
 
@@ -1154,6 +1241,9 @@ class SpiderFootDb:
 
         return True
 
+    # 2 in sfwebui.py
+    # 2 in test/unit/spiderfoot/test_spiderfootdb.py
+    # 1 in spiderfoot/db.py
     def configSet(self, optMap: dict = {}) -> bool:
         """Store the default configuration in the database.
 
@@ -1195,6 +1285,10 @@ class SpiderFootDb:
 
         return True
 
+    # 4 in test/unit/spiderfoot/test_spiderfootdb.py
+    # 1 in sf.py
+    # 1 in sfwebui.py
+    # 1 in spiderfoot/db.py
     def configGet(self) -> dict:
         """Retreive the config from the database
 
@@ -1222,6 +1316,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching configuration") from e
 
+    # 1 in sfwebui.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def configClear(self) -> None:
         """Reset the config to default.
 
@@ -1239,6 +1336,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("Unable to clear configuration from the database") from e
 
+    # 1 in sfwebui.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanConfigSet(self, scan_id, optMap=dict()) -> None:
         """Store a configuration value for a scan.
 
@@ -1280,6 +1380,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when storing config, aborting") from e
 
+    # 4 in sfwebui.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanConfigGet(self, instanceId: str) -> dict:
         """Retrieve configuration data for a scan component.
 
@@ -1311,6 +1414,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching configuration") from e
 
+    # 8 in test/unit/spiderfoot/test_spiderfootdb.py
+    # 2 in modules/sfp__stor_db.py
+    # 1 in spiderfoot/db.py
     def scanEventStore(self, instanceId: str, sfEvent: SpiderFootEvent, truncateSize: int = 0) -> None:
         """Store an event in the database.
 
@@ -1380,6 +1486,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError(f"SQL error encountered when storing event data ({self.dbh})") from e
 
+    # 1 in sfwebui.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanInstanceList(self) -> list:
         """List all previously run scans.
 
@@ -1411,6 +1520,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching scan list") from e
 
+    # 1 in sfwebui.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanResultHistory(self, instanceId: str) -> list:
         """History of data from the scan.
 
@@ -1436,6 +1548,7 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError(f"SQL error encountered when fetching history for scan {instanceId}") from e
 
+    # 6 in spiderfoot/db.py
     @typing.final
     class ScanElementSourcesDirect(typing.NamedTuple):
         generated: int
@@ -1518,6 +1631,10 @@ class SpiderFootDb:
                 source_entity_type,
             )
 
+    # 3 in spiderfoot/correlation.py
+    # 2 in spiderfoot/db.py
+    # 1 in sfwebui.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanElementSourcesDirect(self, instanceId: str, elementIdList: list[str]) -> list[SpiderFootDb.ScanElementSourcesDirect]:
         """Get the source IDs, types and data for a set of IDs.
 
@@ -1570,6 +1687,8 @@ class SpiderFootDb:
 
         return results
 
+    # 3 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanElementChildrenDirect(self, instanceId: str, elementIdList: list) -> list:
         """Get the child IDs, types and data for a set of IDs.
 
@@ -1612,6 +1731,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when getting child element IDs") from e
 
+    # 1 in sfwebui.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanElementSourcesAll(self, instanceId: str, childData: list) -> list:
         """Get the full set of upstream IDs which are parents to the supplied set of IDs.
 
@@ -1676,6 +1798,9 @@ class SpiderFootDb:
         datamap[parentId] = row
         return [datamap, pc]
 
+    # 1 in sfwebui.py
+    # 1 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def scanElementChildrenAll(self, instanceId: str, parentIds: list) -> list:
         """Get the full set of downstream IDs which are children of the supplied set of IDs.
 
@@ -1715,6 +1840,7 @@ class SpiderFootDb:
 
         return datamap
 
+    # 1 in spiderfoot/correlation.py
     def correlationResultCreate(
         self,
         instanceId: str,
