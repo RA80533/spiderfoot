@@ -1080,6 +1080,14 @@ class SpiderFootCorrelator:
                         self.log.error(f"Required field for {field} missing in {rule.id}: {opt}")
                         ok = False
 
+                if field in {
+                    "meta",
+                    "collections",
+                    "aggregation",
+                    "analysis",
+                }:
+                    continue
+
                 else:
                     self.log.error(f"Rule field '{field}' is not a list() or dict()")
                     ok = False
