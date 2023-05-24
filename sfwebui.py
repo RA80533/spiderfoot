@@ -1467,16 +1467,16 @@ class SpiderFootWebUi:
 
         return ""
 
-    @cherrypy.expose
-    @cherrypy.tools.json_out()
-    def vacuum(self) -> bytes:
-        dbh = SpiderFootDb(self.config)
-        try:
-            if dbh.vacuumDB():
-                return json.dumps(["SUCCESS", ""]).encode('utf-8')
-            return json.dumps(["ERROR", "Vacuuming the database failed"]).encode('utf-8')
-        except Exception as e:
-            return json.dumps(["ERROR", f"Vacuuming the database failed: {e}"]).encode('utf-8')
+    # @cherrypy.expose
+    # @cherrypy.tools.json_out()
+    # def vacuum(self) -> bytes:
+    #     dbh = SpiderFootDb(self.config)
+    #     try:
+    #         if dbh.vacuumDB():
+    #             return json.dumps(["SUCCESS", ""]).encode('utf-8')
+    #         return json.dumps(["ERROR", "Vacuuming the database failed"]).encode('utf-8')
+    #     except Exception as e:
+    #         return json.dumps(["ERROR", f"Vacuuming the database failed: {e}"]).encode('utf-8')
 
     #
     # DATA PROVIDERS

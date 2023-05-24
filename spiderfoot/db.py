@@ -442,7 +442,7 @@ class SpiderFootDb:
         with self.dbhLock:
             self.dbh.close()
 
-    # 1 in sfwebui.py
+    # 0 references
     def vacuumDB(self) -> None:
         """Vacuum the database. Clears unused database file pages.
 
