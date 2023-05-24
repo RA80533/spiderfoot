@@ -1067,15 +1067,15 @@ class SpiderFootCorrelator:
             alloptions = set(strictoptions).union(otheroptions)
 
             for opt in strictoptions:
-                if isinstance(rule[field], list):
-                    for item, optelement in enumerate(rule[field]):
+                if isinstance(rule.__dataclass_fields__[field], list):
+                    for item, optelement in enumerate(rule.__dataclass_fields__[field]):
                         if not optelement.get(opt):
                             self.log.error(f"Required field for {field} missing in {rule.id}, item {item}: {opt}")
                             ok = False
                     continue
 
-                if isinstance(rule[field], dict):
-                    if not rule[field].get(opt):
+                if isinstance(rule.__dataclass_fields__[field], dict):
+                    if not rule.__dataclass_fields__[field].get(opt):
                         self.log.error(f"Required field for {field} missing in {rule.id}: {opt}")
                         ok = False
 
