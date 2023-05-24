@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import dataclasses
 import hashlib
 import random
 import re
@@ -20,6 +21,8 @@ import sqlite3
 import threading
 import time
 import typing
+
+import dacite
 
 from .event import SpiderFootEvent
 
@@ -878,7 +881,7 @@ class SpiderFootDb:
                 raise IOError("SQL error encountered when fetching correlation list") from e
 
     # 6 in spiderfoot/db.py
-    @typing.final
+    @dataclasses.dataclass(frozen=True, kw_only=True)
     class ScanResultEvent(typing.NamedTuple):
         generated: int
         c_data: str | None
@@ -895,57 +898,12 @@ class SpiderFootDb:
         s_scan_instance_id: str
         fp: int
         parent_fp: int
-        
-        @staticmethod
-        def from_row(
-            generated: typing.Any,
-            c_data: typing.Any,
-            source_data: typing.Any,
-            c_module: typing.Any,
-            c_type: typing.Any,
-            c_confidence: typing.Any,
-            c_visibility: typing.Any,
-            c_risk: typing.Any,
-            c_hash: typing.Any,
-            c_source_event_hash: typing.Any,
-            t_event_descr: typing.Any,
-            t_event_type: typing.Any,
-            s_scan_instance_id: typing.Any,
-            fp: typing.Any,
-            parent_fp: typing.Any,
-        ) -> SpiderFootDb.ScanResultEvent:
-            assert type(generated) is int
-            assert type(c_data) is str or c_data is None
-            assert type(source_data) is str or source_data is None
-            assert type(c_module) is str
-            assert type(c_type) is str
-            assert type(c_confidence) is int
-            assert type(c_visibility) is int
-            assert type(c_risk) is int
-            assert type(c_hash) is str
-            assert type(c_source_event_hash) is str
-            assert type(t_event_descr) is str
-            assert type(t_event_type) is str
-            assert type(s_scan_instance_id) is str
-            assert type(fp) is int
-            assert type(parent_fp) is int
 
-            return SpiderFootDb.ScanResultEvent(
-                generated,
-                c_data,
-                source_data,
-                c_module,
-                c_type,
-                c_confidence,
-                c_visibility,
-                c_risk,
-                c_hash,
-                c_source_event_hash,
-                t_event_descr,
-                t_event_type,
-                s_scan_instance_id,
-                fp,
-                parent_fp,
+        @classmethod
+        def from_row(cls, row: tuple) -> typing.Self:
+            return dacite.from_dict(
+                data_class=cls,
+                data=dict(zip(cls.__dataclass_fields__.keys(), row)),
             )
 
     # 7 in sfwebui.py
@@ -1051,7 +1009,7 @@ class SpiderFootDb:
         results: list[SpiderFootDb.ScanResultEvent] = []
         for row in rows:
             assert isinstance(row, tuple)
-            results.append(self.ScanResultEvent.from_row(*row))
+            results.append(self.ScanResultEvent.from_row(row))
 
         return results
 
@@ -1548,7 +1506,7 @@ class SpiderFootDb:
                 raise IOError(f"SQL error encountered when fetching history for scan {instanceId}") from e
 
     # 6 in spiderfoot/db.py
-    @typing.final
+    @dataclasses.dataclass(frozen=True, kw_only=True)
     class ScanElementSourcesDirect(typing.NamedTuple):
         generated: int
         c_data: str | None
@@ -1568,66 +1526,12 @@ class SpiderFootDb:
         s_type: str
         s_module: str
         source_entity_type: str
-        
-        @staticmethod
-        def from_row(
-            generated: typing.Any,
-            c_data: typing.Any,
-            source_data: typing.Any,
-            c_module: typing.Any,
-            c_type: typing.Any,
-            c_confidence: typing.Any,
-            c_visibility: typing.Any,
-            c_risk: typing.Any,
-            c_hash: typing.Any,
-            c_source_event_hash: typing.Any,
-            t_event_descr: typing.Any,
-            t_event_type: typing.Any,
-            s_scan_instance_id: typing.Any,
-            fp: typing.Any,
-            parent_fp: typing.Any,
-            s_type: typing.Any,
-            s_module: typing.Any,
-            source_entity_type: typing.Any,
-        ) -> SpiderFootDb.ScanElementSourcesDirect:
-            assert type(generated) is int
-            assert type(c_data) is str or c_data is None
-            assert type(source_data) is str or source_data is None
-            assert type(c_module) is str
-            assert type(c_type) is str
-            assert type(c_confidence) is int
-            assert type(c_visibility) is int
-            assert type(c_risk) is int
-            assert type(c_hash) is str
-            assert type(c_source_event_hash) is str
-            assert type(t_event_descr) is str
-            assert type(t_event_type) is str
-            assert type(s_scan_instance_id) is str
-            assert type(fp) is int
-            assert type(parent_fp) is int
-            assert type(s_type) is str
-            assert type(s_module) is str
-            assert type(source_entity_type) is str
 
-            return SpiderFootDb.ScanElementSourcesDirect(
-                generated,
-                c_data,
-                source_data,
-                c_module,
-                c_type,
-                c_confidence,
-                c_visibility,
-                c_risk,
-                c_hash,
-                c_source_event_hash,
-                t_event_descr,
-                t_event_type,
-                s_scan_instance_id,
-                fp,
-                parent_fp,
-                s_type,
-                s_module,
-                source_entity_type,
+        @classmethod
+        def from_row(cls, row: tuple) -> typing.Self:
+            return dacite.from_dict(
+                data_class=cls,
+                data=dict(zip(cls.__dataclass_fields__.keys(), row)),
             )
 
     # 3 in spiderfoot/correlation.py
@@ -1682,7 +1586,7 @@ class SpiderFootDb:
         results: list[SpiderFootDb.ScanElementSourcesDirect] = []
         for row in rows:
             assert isinstance(row, tuple)
-            results.append(self.ScanElementSourcesDirect.from_row(*row))
+            results.append(self.ScanElementSourcesDirect.from_row(row))
 
         return results
 
