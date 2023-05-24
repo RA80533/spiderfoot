@@ -21,6 +21,8 @@ import threading
 import time
 import typing
 
+from .event import SpiderFootEvent
+
 
 class SpiderFootDb:
     """SpiderFoot database
@@ -1309,7 +1311,7 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching configuration") from e
 
-    def scanEventStore(self, instanceId: str, sfEvent, truncateSize: int = 0) -> None:
+    def scanEventStore(self, instanceId: str, sfEvent: SpiderFootEvent, truncateSize: int = 0) -> None:
         """Store an event in the database.
 
         Args:
@@ -1322,8 +1324,6 @@ class SpiderFootDb:
             ValueError: arg value was invalid
             IOError: database I/O failed
         """
-        from spiderfoot import SpiderFootEvent
-
         if not instanceId:
             raise ValueError("instanceId is empty") from None
 
