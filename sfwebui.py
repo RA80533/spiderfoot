@@ -1269,32 +1269,32 @@ class SpiderFootWebUi:
         """
         return ["SUCCESS", __version__]
 
-    @cherrypy.expose
-    @cherrypy.tools.json_out()
-    def query(self, query: str) -> str:
-        """For the CLI to run queries against the database.
+    # @cherrypy.expose
+    # @cherrypy.tools.json_out()
+    # def query(self, query: str) -> str:
+    #     """For the CLI to run queries against the database.
 
-        Args:
-            query (str): SQL query
+    #     Args:
+    #         query (str): SQL query
 
-        Returns:
-            str: query results as JSON
-        """
-        dbh = SpiderFootDb(self.config)
+    #     Returns:
+    #         str: query results as JSON
+    #     """
+    #     dbh = SpiderFootDb(self.config)
 
-        if not query:
-            return self.jsonify_error('400', "Invalid query.")
+    #     if not query:
+    #         return self.jsonify_error('400', "Invalid query.")
 
-        if not query.lower().startswith("select"):
-            return self.jsonify_error('400', "Non-SELECTs are unpredictable and not recommended.")
+    #     if not query.lower().startswith("select"):
+    #         return self.jsonify_error('400', "Non-SELECTs are unpredictable and not recommended.")
 
-        try:
-            ret = dbh.dbh.execute(query)
-            data = ret.fetchall()
-            columnNames = [c[0] for c in dbh.dbh.description]
-            return [dict(zip(columnNames, row)) for row in data]
-        except Exception as e:
-            return self.jsonify_error('500', str(e))
+    #     try:
+    #         ret = dbh.dbh.execute(query)
+    #         data = ret.fetchall()
+    #         columnNames = [c[0] for c in dbh.dbh.description]
+    #         return [dict(zip(columnNames, row)) for row in data]
+    #     except Exception as e:
+    #         return self.jsonify_error('500', str(e))
 
     @cherrypy.expose
     def startscan(self, scanname: str, scantarget: str, modulelist: str, typelist: str, usecase: str) -> str:

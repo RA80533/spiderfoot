@@ -45,7 +45,6 @@ class SpiderFootDb:
     """
 
     # 57 in spiderfoot/db.py
-    #  2 in sfwebui.py
     dbh = None
     # 19 in spiderfoot/db.py
     conn = None
