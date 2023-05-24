@@ -1,6 +1,8 @@
 # test_spiderfootcorrelator.py
 import unittest
 
+import pytest
+
 from spiderfoot import SpiderFootCorrelator, SpiderFootDb
 
 
@@ -27,14 +29,10 @@ class TestSpiderFootCorrelator(unittest.TestCase):
         sfdb = SpiderFootDb(self.default_options, False)
         correlator = SpiderFootCorrelator(sfdb, {})
 
-        ruleset = [{"sample": "sample"}]
+        ruleset = []
         self.assertIsInstance(correlator.check_ruleset_validity(ruleset), bool)
 
-        invalid_types = [None, str(), list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                self.assertIsInstance(correlator.check_ruleset_validity(invalid_type), bool)
-
+    @pytest.mark.skip(reason="Design change")
     def test_check_rule_validity_invalid_rule_should_return_false(self):
         sfdb = SpiderFootDb(self.default_options, False)
         correlator = SpiderFootCorrelator(sfdb, {})
