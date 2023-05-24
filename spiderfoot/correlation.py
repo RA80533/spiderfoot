@@ -142,10 +142,14 @@ class SpiderFootCorrelator:
         for rule_id in ruleset.keys():
             self.log.debug(f"Parsing rule {rule_id}...")
             try:
-                parsed_yaml = yaml.safe_load(ruleset[rule_id])
+                loaded_yaml = yaml.safe_load(ruleset[rule_id])
             except Exception as e:
                 raise SyntaxError(f"Unable to process a YAML correlation rule [{rule_id}]") from e
-            self.rules.append(dacite.from_dict(Rule, parsed_yaml))
+            try:
+                parsed_yaml = dacite.from_dict(Rule, loaded_yaml)
+            except Exception as e:
+                raise SyntaxError(f"Unable to process a YAML correlation rule [{rule_id}]") from e
+            self.rules.append(parsed_yaml)
 
         # Strip any trailing newlines that may have creeped into meta name/description
         for rule in self.rules:
