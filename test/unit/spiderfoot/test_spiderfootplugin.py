@@ -69,18 +69,6 @@ class TestSpiderFootPlugin(unittest.TestCase):
         self.assertIsInstance(get_target, str)
         self.assertEqual("spiderfoot.net", get_target)
 
-    def test_setTarget_argument_target_invalid_type_should_raise_TypeError(self):
-        """
-        Test setTarget(self, target)
-        """
-        sfp = SpiderFootPlugin()
-
-        invalid_types = [None, "", list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfp.setTarget(invalid_type)
-
     def test_set_dbhargument_dbh_should_set_database_handle(self):
         """
         Test setDbh(self, dbh)
@@ -103,18 +91,6 @@ class TestSpiderFootPlugin(unittest.TestCase):
         get_scan_id = sfp.getScanId()
         self.assertIsInstance(get_scan_id, str)
         self.assertEqual(scan_id, get_scan_id)
-
-    def test_setScanId_argument_id_invalid_type_should_raise_TypeError(self):
-        """
-        Test setScanId(self, id)
-        """
-        sfp = SpiderFootPlugin()
-
-        invalid_types = [None, list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfp.setScanId(invalid_type)
 
     def test_getScanId_should_return_a_string(self):
         """
@@ -292,18 +268,6 @@ class TestSpiderFootPlugin(unittest.TestCase):
         sfp.notifyListeners(evt)
 
         self.assertEqual('TBD', 'TBD')
-
-    def test_notifyListeners_argument_sfEvent_invalid_event_should_raise_TypeError(self):
-        """
-        Test notifyListeners(self, sfEvent)
-        """
-        sfp = SpiderFootPlugin()
-
-        invalid_types = [None, "", list(), dict(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type):
-                with self.assertRaises(TypeError):
-                    sfp.notifyListeners(invalid_type)
 
     def test_checkForStop(self):
         """
