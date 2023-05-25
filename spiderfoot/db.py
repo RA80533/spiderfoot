@@ -26,6 +26,83 @@ import dacite
 
 from .event import SpiderFootEvent
 
+
+# 3 in spiderfoot/db.py
+# Queries for creating the SpiderFoot database
+createSchemaQueries = [
+    "PRAGMA journal_mode=WAL",
+    "CREATE TABLE tbl_event_types ( \
+        event       VARCHAR NOT NULL PRIMARY KEY, \
+        event_descr VARCHAR NOT NULL, \
+        event_raw   INT NOT NULL DEFAULT 0, \
+        event_type  VARCHAR NOT NULL \
+    )",
+    "CREATE TABLE tbl_config ( \
+        scope   VARCHAR NOT NULL, \
+        opt     VARCHAR NOT NULL, \
+        val     VARCHAR NOT NULL, \
+        PRIMARY KEY (scope, opt) \
+    )",
+    "CREATE TABLE tbl_scan_instances ( \
+        guid        VARCHAR NOT NULL PRIMARY KEY, \
+        name        VARCHAR NOT NULL, \
+        seed_target VARCHAR NOT NULL, \
+        created     INT DEFAULT 0, \
+        started     INT DEFAULT 0, \
+        ended       INT DEFAULT 0, \
+        status      VARCHAR NOT NULL \
+    )",
+    "CREATE TABLE tbl_scan_log ( \
+        scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
+        generated           INT NOT NULL, \
+        component           VARCHAR, \
+        type                VARCHAR NOT NULL, \
+        message             VARCHAR \
+    )",
+    "CREATE TABLE tbl_scan_config ( \
+        scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
+        component           VARCHAR NOT NULL, \
+        opt                 VARCHAR NOT NULL, \
+        val                 VARCHAR NOT NULL \
+    )",
+    "CREATE TABLE tbl_scan_results ( \
+        scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
+        hash                VARCHAR NOT NULL, \
+        type                VARCHAR NOT NULL REFERENCES tbl_event_types(event), \
+        generated           INT NOT NULL, \
+        confidence          INT NOT NULL DEFAULT 100, \
+        visibility          INT NOT NULL DEFAULT 100, \
+        risk                INT NOT NULL DEFAULT 0, \
+        module              VARCHAR NOT NULL, \
+        data                VARCHAR, \
+        false_positive      INT NOT NULL DEFAULT 0, \
+        source_event_hash  VARCHAR DEFAULT 'ROOT' \
+    )",
+    "CREATE TABLE tbl_scan_correlation_results ( \
+        id                  VARCHAR NOT NULL PRIMARY KEY, \
+        scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
+        title               VARCHAR NOT NULL, \
+        rule_risk           VARCHAR NOT NULL, \
+        rule_id             VARCHAR NOT NULL, \
+        rule_name           VARCHAR NOT NULL, \
+        rule_descr          VARCHAR NOT NULL, \
+        rule_logic          VARCHAR NOT NULL \
+    )",
+    "CREATE TABLE tbl_scan_correlation_results_events ( \
+        correlation_id      VARCHAR NOT NULL REFERENCES tbl_scan_correlation_results(id), \
+        event_hash          VARCHAR NOT NULL REFERENCES tbl_scan_results(hash) \
+    )",
+    "CREATE INDEX idx_scan_results_id ON tbl_scan_results (scan_instance_id)",
+    "CREATE INDEX idx_scan_results_type ON tbl_scan_results (scan_instance_id, type)",
+    "CREATE INDEX idx_scan_results_hash ON tbl_scan_results (scan_instance_id, hash)",
+    "CREATE INDEX idx_scan_results_module ON tbl_scan_results(scan_instance_id, module)",
+    "CREATE INDEX idx_scan_results_srchash ON tbl_scan_results (scan_instance_id, source_event_hash)",
+    "CREATE INDEX idx_scan_logs ON tbl_scan_log (scan_instance_id)",
+    "CREATE INDEX idx_scan_correlation ON tbl_scan_correlation_results (scan_instance_id, id)",
+    "CREATE INDEX idx_scan_correlation_events ON tbl_scan_correlation_results_events (correlation_id)"
+]
+
+
 # 46 in test/unit/spiderfoot/test_spiderfootdb.py
 # 36 in sfwebui.py
 #  9 in spiderfoot/db.py
@@ -55,81 +132,6 @@ class SpiderFootDb:
     # 33 in spiderfoot/db.py
     # Prevent multithread access to sqlite database
     dbhLock = threading.RLock()
-
-    # 3 in spiderfoot/db.py
-    # Queries for creating the SpiderFoot database
-    createSchemaQueries = [
-        "PRAGMA journal_mode=WAL",
-        "CREATE TABLE tbl_event_types ( \
-            event       VARCHAR NOT NULL PRIMARY KEY, \
-            event_descr VARCHAR NOT NULL, \
-            event_raw   INT NOT NULL DEFAULT 0, \
-            event_type  VARCHAR NOT NULL \
-        )",
-        "CREATE TABLE tbl_config ( \
-            scope   VARCHAR NOT NULL, \
-            opt     VARCHAR NOT NULL, \
-            val     VARCHAR NOT NULL, \
-            PRIMARY KEY (scope, opt) \
-        )",
-        "CREATE TABLE tbl_scan_instances ( \
-            guid        VARCHAR NOT NULL PRIMARY KEY, \
-            name        VARCHAR NOT NULL, \
-            seed_target VARCHAR NOT NULL, \
-            created     INT DEFAULT 0, \
-            started     INT DEFAULT 0, \
-            ended       INT DEFAULT 0, \
-            status      VARCHAR NOT NULL \
-        )",
-        "CREATE TABLE tbl_scan_log ( \
-            scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
-            generated           INT NOT NULL, \
-            component           VARCHAR, \
-            type                VARCHAR NOT NULL, \
-            message             VARCHAR \
-        )",
-        "CREATE TABLE tbl_scan_config ( \
-            scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
-            component           VARCHAR NOT NULL, \
-            opt                 VARCHAR NOT NULL, \
-            val                 VARCHAR NOT NULL \
-        )",
-        "CREATE TABLE tbl_scan_results ( \
-            scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
-            hash                VARCHAR NOT NULL, \
-            type                VARCHAR NOT NULL REFERENCES tbl_event_types(event), \
-            generated           INT NOT NULL, \
-            confidence          INT NOT NULL DEFAULT 100, \
-            visibility          INT NOT NULL DEFAULT 100, \
-            risk                INT NOT NULL DEFAULT 0, \
-            module              VARCHAR NOT NULL, \
-            data                VARCHAR, \
-            false_positive      INT NOT NULL DEFAULT 0, \
-            source_event_hash  VARCHAR DEFAULT 'ROOT' \
-        )",
-        "CREATE TABLE tbl_scan_correlation_results ( \
-            id                  VARCHAR NOT NULL PRIMARY KEY, \
-            scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
-            title               VARCHAR NOT NULL, \
-            rule_risk           VARCHAR NOT NULL, \
-            rule_id             VARCHAR NOT NULL, \
-            rule_name           VARCHAR NOT NULL, \
-            rule_descr          VARCHAR NOT NULL, \
-            rule_logic          VARCHAR NOT NULL \
-        )",
-        "CREATE TABLE tbl_scan_correlation_results_events ( \
-            correlation_id      VARCHAR NOT NULL REFERENCES tbl_scan_correlation_results(id), \
-            event_hash          VARCHAR NOT NULL REFERENCES tbl_scan_results(hash) \
-        )",
-        "CREATE INDEX idx_scan_results_id ON tbl_scan_results (scan_instance_id)",
-        "CREATE INDEX idx_scan_results_type ON tbl_scan_results (scan_instance_id, type)",
-        "CREATE INDEX idx_scan_results_hash ON tbl_scan_results (scan_instance_id, hash)",
-        "CREATE INDEX idx_scan_results_module ON tbl_scan_results(scan_instance_id, module)",
-        "CREATE INDEX idx_scan_results_srchash ON tbl_scan_results (scan_instance_id, source_event_hash)",
-        "CREATE INDEX idx_scan_logs ON tbl_scan_log (scan_instance_id)",
-        "CREATE INDEX idx_scan_correlation ON tbl_scan_correlation_results (scan_instance_id, id)",
-        "CREATE INDEX idx_scan_correlation_events ON tbl_scan_correlation_results_events (correlation_id)"
-    ]
 
     # 1 in spiderfoot/db.py
     eventDetails = [
@@ -395,7 +397,7 @@ class SpiderFootDb:
                 self.dbh.execute("SELECT COUNT(*) FROM tbl_scan_correlation_results")
             except sqlite3.Error:
                 try:
-                    for query in self.createSchemaQueries:
+                    for query in createSchemaQueries:
                         if "correlation" in query:
                             self.dbh.execute(query)
                         self.conn.commit()
@@ -419,7 +421,7 @@ class SpiderFootDb:
 
         with self.dbhLock:
             try:
-                for qry in self.createSchemaQueries:
+                for qry in createSchemaQueries:
                     self.dbh.execute(qry)
                 self.conn.commit()
                 for row in self.eventDetails:
