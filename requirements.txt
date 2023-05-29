@@ -2,7 +2,7 @@ adblockparser>=0.7,<1
 dacite ~= 1.8
 dnspython>=2.3.0,<3
 ExifRead>=2.3.2,<3
-CherryPy>=18.8.0,<19
+CherryPy @ git+https://github.com/RA80533/cherrypy.git
 cherrypy-cors>=1.6,<2
 Mako>=1.2.4,<2
 beautifulsoup4>=4.11.2,<5
