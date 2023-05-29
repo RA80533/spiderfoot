@@ -448,25 +448,6 @@ class SpiderFootDb:
         with self.dbhLock:
             self.dbh.close()
 
-    # 0 references
-    def vacuumDB(self) -> None:
-        """Vacuum the database. Clears unused database file pages.
-
-        Returns:
-            bool: success
-
-        Raises:
-            IOError: database I/O failed
-        """
-        with self.dbhLock:
-            try:
-                self.dbh.execute("VACUUM")
-                self.conn.commit()
-                return True
-            except sqlite3.Error as e:
-                raise IOError("SQL error encountered when vacuuming the database") from e
-        return False
-
     # 4 in test/unit/spiderfoot/test_spiderfootdb.py
     # 1 in sfwebui.py
     # 1 in spiderfoot/db.py
