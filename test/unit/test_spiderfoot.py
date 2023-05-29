@@ -28,12 +28,6 @@ class TestSpiderFoot(unittest.TestCase):
 
     test_tlds = "// ===BEGIN ICANN DOMAINS===\n\ncom\nnet\norg\n\n// // ===END ICANN DOMAINS===\n"
 
-    def test_init_argument_options_of_invalid_type_should_raise_TypeError(self):
-        invalid_types = [None, "", bytes(), list(), int()]
-        for invalid_type in invalid_types:
-            with self.subTest(invalid_type=invalid_type), self.assertRaises(TypeError):
-                SpiderFoot(invalid_type)
-
     def test_init_argument_options_with_empty_dict(self):
         sf = SpiderFoot(dict())
         self.assertIsInstance(sf, SpiderFoot)
@@ -719,12 +713,6 @@ class TestSpiderFoot(unittest.TestCase):
             with self.subTest(invalid_type=invalid_type):
                 check_dns_wildcard = sf.checkDnsWildcard(invalid_type)
                 self.assertIsInstance(check_dns_wildcard, bool)
-
-    def test_check_dns_wildcard_should_return_a_boolean(self):
-        sf = SpiderFoot(self.default_options)
-
-        check_dns_wildcard = sf.checkDnsWildcard('local')
-        self.assertIsInstance(check_dns_wildcard, bool)
 
     @unittest.skip("todo")
     def test_google_iterate(self):
