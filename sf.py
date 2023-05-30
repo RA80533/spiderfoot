@@ -209,9 +209,9 @@ def main() -> None:
         dbh = SpiderFootDb(sfConfig, init=True)
         log.info("Types available:")
         typedata = dbh.eventTypes()
-        types = dict()
+        types: dict[str, str] = {}
         for r in typedata:
-            types[r[1]] = r[0]
+            types[r.event_descr] = r.event
 
         for t in sorted(types.keys()):
             print(f"{t.ljust(45)}  {types[t]}")
@@ -330,9 +330,9 @@ def start_scan(sfConfig: dict, sfModules: dict, args, loggingQueue) -> None:
 
     # Add sfp__stor_stdout to the module list
     typedata = dbh.eventTypes()
-    types = dict()
+    types: dict[str, str] = {}
     for r in typedata:
-        types[r[1]] = r[0]
+        types[r.event_descr] = r.event
 
     sfp__stor_stdout_opts = sfConfig['__modules__']['sfp__stor_stdout']['opts']
     sfp__stor_stdout_opts['_eventtypes'] = types
