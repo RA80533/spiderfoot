@@ -107,7 +107,7 @@ _EventType = typing.Literal["DATA", "DESCRIPTOR", "ENTITY", "INTERNAL", "SUBENTI
 
 
 # 1 in spiderfoot/db.py
-eventDetails: frozenset[tuple[str, str, typing.Literal[0, 1], _EventType]] = frozenset({
+eventDetails: list[tuple[str, str, typing.Literal[0, 1], _EventType]] = [
     ('ROOT', 'Internal SpiderFoot Root event', 1, 'INTERNAL'),
     ('ACCOUNT_EXTERNAL_OWNED', 'Account on External Site', 0, 'ENTITY'),
     ('ACCOUNT_EXTERNAL_OWNED_COMPROMISED', 'Hacked Account on External Site', 0, 'DESCRIPTOR'),
@@ -280,7 +280,7 @@ eventDetails: frozenset[tuple[str, str, typing.Literal[0, 1], _EventType]] = fro
     ('WEBSERVER_TECHNOLOGY', 'Web Technology', 0, 'DESCRIPTOR'),
     ('WIFI_ACCESS_POINT', 'WiFi Access Point Nearby', 0, 'ENTITY'),
     ('WIKIPEDIA_PAGE_EDIT', 'Wikipedia Page Edit', 0, 'DESCRIPTOR'),
-})
+]
 
 
 # 46 in test/unit/spiderfoot/test_spiderfootdb.py
@@ -296,22 +296,14 @@ eventDetails: frozenset[tuple[str, str, typing.Literal[0, 1], _EventType]] = fro
 #  2 in spiderfoot/logger.py
 #  1 in spiderfoot/__init__.py
 class SpiderFootDb:
-    """SpiderFoot database
-
-    Attributes:
-        conn: SQLite connect() connection
-        dbh: SQLite cursor() database handle
-        dbhLock (_thread.RLock): thread lock on database handle
-    """
-
     # 57 in spiderfoot/db.py
-    dbh = None
+    _cursor: sqlite3.Cursor
     # 19 in spiderfoot/db.py
-    conn = None
+    _conn: sqlite3.Connection
 
     # 33 in spiderfoot/db.py
     # Prevent multithread access to sqlite database
-    dbhLock = threading.RLock()
+    _lock: threading.RLock
 
     # 44 in test/unit/spiderfoot/test_spiderfootdb.py
     # 35 in sfwebui.py
@@ -323,7 +315,7 @@ class SpiderFootDb:
     #  1 in spiderfoot/db.py
     #  1 in spiderfoot/logger.py
     #  1 in spiderfoot/plugin.py
-    def __init__(self, opts: dict, init: bool = False) -> None:
+    def __init__(self, opts: dict[typing.Literal["__database"], str], init: bool = False) -> None:
         """Initialize database and create handle to the SQLite database file.
         Creates the database file if it does not exist.
         Creates database schema if it does not exist.
@@ -338,11 +330,6 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        if not opts:
-            raise ValueError("opts is empty") from None
-        if not opts.get('__database'):
-            raise ValueError("opts['__database'] is empty") from None
-
         database_path = opts['__database']
 
         # create database directory
@@ -352,17 +339,11 @@ class SpiderFootDb:
         # at least we can use this opportunity to ensure we have permissions to
         # read and write to such a file.
         try:
-            dbh = sqlite3.connect(database_path)
+            self._conn = sqlite3.connect(database_path)
         except Exception as e:
             raise IOError(f"Error connecting to internal database {database_path}") from e
 
-        if dbh is None:
-            raise IOError(f"Could not connect to internal database, and could not create {database_path}") from None
-
-        dbh.text_factory = str
-
-        self.conn = dbh
-        self.dbh = dbh.cursor()
+        self._cursor = self._conn.cursor()
 
         def __dbregex__(qry: str, data: str) -> bool:
             """SQLite doesn't support regex queries, so we create
@@ -383,12 +364,14 @@ class SpiderFootDb:
                 return False
             return ret is not None
 
+        self._lock = threading.RLock()
+
         # Now we actually check to ensure the database file has the schema set
         # up correctly.
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute('SELECT COUNT(*) FROM tbl_scan_config')
-                self.conn.create_function("REGEXP", 2, __dbregex__)
+                self._cursor.execute('SELECT COUNT(*) FROM tbl_scan_config')
+                self._conn.create_function("REGEXP", 2, __dbregex__)
             except sqlite3.Error:
                 try:
                     self.create()
@@ -408,11 +391,11 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        with self.dbhLock:
+        with self._lock:
             try:
                 for qry in createSchemaQueries:
-                    self.dbh.execute(qry)
-                self.conn.commit()
+                    self._cursor.execute(qry)
+                self._conn.commit()
                 for row in eventDetails:
                     event = row[0]
                     event_descr = row[1]
@@ -420,10 +403,10 @@ class SpiderFootDb:
                     event_type = row[3]
                     qry = "INSERT INTO tbl_event_types (event, event_descr, event_raw, event_type) VALUES (?, ?, ?, ?)"
 
-                    self.dbh.execute(qry, (
+                    self._cursor.execute(qry, (
                         event, event_descr, event_raw, event_type
                     ))
-                self.conn.commit()
+                self._conn.commit()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when setting up database") from e
 
@@ -433,8 +416,8 @@ class SpiderFootDb:
     def close(self) -> None:
         """Close the database handle."""
 
-        with self.dbhLock:
-            self.dbh.close()
+        with self._lock:
+            self._cursor.close()
 
     # 4 in test/unit/spiderfoot/test_spiderfootdb.py
     # 1 in sfwebui.py
@@ -512,10 +495,10 @@ class SpiderFootDb:
 
         qry += " ORDER BY c.data"
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvars)
-                return self.dbh.fetchall()
+                self._cursor.execute(qry, qvars)
+                return self._cursor.fetchall()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching search results") from e
 
@@ -536,10 +519,10 @@ class SpiderFootDb:
         """
 
         qry = "SELECT event_descr, event, event_raw, event_type FROM tbl_event_types"
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry)
-                return self.dbh.fetchall()
+                self._cursor.execute(qry)
+                return self._cursor.fetchall()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when retrieving event types") from e
 
@@ -581,10 +564,10 @@ class SpiderFootDb:
                 (scan_instance_id, generated, component, type, message) \
                 VALUES (?, ?, ?, ?, ?)"
 
-            with self.dbhLock:
+            with self._lock:
                 try:
-                    self.dbh.executemany(qry, inserts)
-                    self.conn.commit()
+                    self._cursor.executemany(qry, inserts)
+                    self._conn.commit()
                 except sqlite3.Error as e:
                     if "locked" not in e.args[0] and "thread" not in e.args[0]:
                         raise IOError("Unable to log scan event in database") from e
@@ -615,12 +598,12 @@ class SpiderFootDb:
             (scan_instance_id, generated, component, type, message) \
             VALUES (?, ?, ?, ?, ?)"
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, (
+                self._cursor.execute(qry, (
                     instanceId, time.time() * 1000, component, classification, message
                 ))
-                self.conn.commit()
+                self._conn.commit()
             except sqlite3.Error as e:
                 if "locked" not in e.args[0] and "thread" not in e.args[0]:
                     raise IOError("Unable to log scan event in database") from e
@@ -647,12 +630,12 @@ class SpiderFootDb:
             (guid, name, seed_target, created, status) \
             VALUES (?, ?, ?, ?, ?)"
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, (
+                self._cursor.execute(qry, (
                     instanceId, scanName, scanTarget, time.time() * 1000, 'CREATED'
                 ))
-                self.conn.commit()
+                self._conn.commit()
             except sqlite3.Error as e:
                 raise IOError("Unable to create scan instance in database") from e
 
@@ -693,10 +676,10 @@ class SpiderFootDb:
         qry += " guid = guid WHERE guid = ?"
         qvars.append(instanceId)
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvars)
-                self.conn.commit()
+                self._cursor.execute(qry, qvars)
+                self._conn.commit()
             except sqlite3.Error:
                 raise IOError("Unable to set information for the scan instance.") from None
 
@@ -725,10 +708,10 @@ class SpiderFootDb:
             FROM tbl_scan_instances WHERE guid = ?"
         qvars = [instanceId]
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvars)
-                return self.dbh.fetchone()
+                self._cursor.execute(qry, qvars)
+                return self._cursor.fetchone()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when retrieving scan instance") from e
 
@@ -775,10 +758,10 @@ class SpiderFootDb:
 
         qvars = [instanceId]
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvars)
-                return self.dbh.fetchall()
+                self._cursor.execute(qry, qvars)
+                return self._cursor.fetchall()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching result summary") from e
 
@@ -815,10 +798,10 @@ class SpiderFootDb:
 
         qvars = [instanceId]
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvars)
-                return self.dbh.fetchall()
+                self._cursor.execute(qry, qvars)
+                return self._cursor.fetchall()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching correlation summary") from e
 
@@ -845,10 +828,10 @@ class SpiderFootDb:
 
         qvars = [instanceId]
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvars)
-                return self.dbh.fetchall()
+                self._cursor.execute(qry, qvars)
+                return self._cursor.fetchall()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching correlation list") from e
 
@@ -971,10 +954,10 @@ class SpiderFootDb:
         qry += " ORDER BY c.data"
 
         rows = []
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvars)
-                rows = self.dbh.fetchall()
+                self._cursor.execute(qry, qvars)
+                rows = self._cursor.fetchall()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching result events") from e
         
@@ -1016,10 +999,10 @@ class SpiderFootDb:
 
         qry += " GROUP BY type, data ORDER BY COUNT(*)"
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvars)
-                return self.dbh.fetchall()
+                self._cursor.execute(qry, qvars)
+                return self._cursor.fetchall()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching unique result events") from e
 
@@ -1061,10 +1044,10 @@ class SpiderFootDb:
             qry += " LIMIT ?"
             qvars.append(str(limit))
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvars)
-                return self.dbh.fetchall()
+                self._cursor.execute(qry, qvars)
+                return self._cursor.fetchall()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching scan logs") from e
 
@@ -1094,10 +1077,10 @@ class SpiderFootDb:
             qry += " LIMIT ?"
             qvars.append(str(limit))
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvars)
-                return self.dbh.fetchall()
+                self._cursor.execute(qry, qvars)
+                return self._cursor.fetchall()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching scan errors") from e
 
@@ -1123,13 +1106,13 @@ class SpiderFootDb:
         qry4 = "DELETE FROM tbl_scan_log WHERE scan_instance_id = ?"
         qvars = [instanceId]
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry1, qvars)
-                self.dbh.execute(qry2, qvars)
-                self.dbh.execute(qry3, qvars)
-                self.dbh.execute(qry4, qvars)
-                self.conn.commit()
+                self._cursor.execute(qry1, qvars)
+                self._cursor.execute(qry2, qvars)
+                self._cursor.execute(qry3, qvars)
+                self._cursor.execute(qry4, qvars)
+                self._conn.commit()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when deleting scan") from e
 
@@ -1153,18 +1136,18 @@ class SpiderFootDb:
             IOError: database I/O failed
         """
 
-        with self.dbhLock:
+        with self._lock:
             for resultHash in resultHashes:
                 qry = "UPDATE tbl_scan_results SET false_positive = ? WHERE \
                     scan_instance_id = ? AND hash = ?"
                 qvars = [fpFlag, instanceId, resultHash]
                 try:
-                    self.dbh.execute(qry, qvars)
+                    self._cursor.execute(qry, qvars)
                 except sqlite3.Error as e:
                     raise IOError("SQL error encountered when updating false-positive") from e
 
             try:
-                self.conn.commit()
+                self._conn.commit()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when updating false-positive") from e
 
@@ -1192,7 +1175,7 @@ class SpiderFootDb:
 
         qry = "REPLACE INTO tbl_config (scope, opt, val) VALUES (?, ?, ?)"
 
-        with self.dbhLock:
+        with self._lock:
             for opt in list(optMap.keys()):
                 # Module option
                 if ":" in opt:
@@ -1203,12 +1186,12 @@ class SpiderFootDb:
                     qvals = ["GLOBAL", opt, optMap[opt]]
 
                 try:
-                    self.dbh.execute(qry, qvals)
+                    self._cursor.execute(qry, qvals)
                 except sqlite3.Error as e:
                     raise IOError("SQL error encountered when storing config, aborting") from e
 
             try:
-                self.conn.commit()
+                self._conn.commit()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when storing config, aborting") from e
 
@@ -1232,10 +1215,10 @@ class SpiderFootDb:
 
         retval = dict()
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry)
-                for [scope, opt, val] in self.dbh.fetchall():
+                self._cursor.execute(qry)
+                for [scope, opt, val] in self._cursor.fetchall():
                     if scope == "GLOBAL":
                         retval[opt] = val
                     else:
@@ -1258,10 +1241,10 @@ class SpiderFootDb:
         """
 
         qry = "DELETE from tbl_config"
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry)
-                self.conn.commit()
+                self._cursor.execute(qry)
+                self._conn.commit()
             except sqlite3.Error as e:
                 raise IOError("Unable to clear configuration from the database") from e
 
@@ -1289,7 +1272,7 @@ class SpiderFootDb:
         qry = "REPLACE INTO tbl_scan_config \
                 (scan_instance_id, component, opt, val) VALUES (?, ?, ?, ?)"
 
-        with self.dbhLock:
+        with self._lock:
             for opt in list(optMap.keys()):
                 # Module option
                 if ":" in opt:
@@ -1300,12 +1283,12 @@ class SpiderFootDb:
                     qvals = [scan_id, "GLOBAL", opt, optMap[opt]]
 
                 try:
-                    self.dbh.execute(qry, qvals)
+                    self._cursor.execute(qry, qvals)
                 except sqlite3.Error as e:
                     raise IOError("SQL error encountered when storing config, aborting") from e
 
             try:
-                self.conn.commit()
+                self._conn.commit()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when storing config, aborting") from e
 
@@ -1331,10 +1314,10 @@ class SpiderFootDb:
 
         retval = dict()
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvars)
-                for [component, opt, val] in self.dbh.fetchall():
+                self._cursor.execute(qry, qvars)
+                for [component, opt, val] in self._cursor.fetchall():
                     if component == "GLOBAL":
                         retval[opt] = val
                     else:
@@ -1408,12 +1391,12 @@ class SpiderFootDb:
                  sfEvent.confidence, sfEvent.visibility, sfEvent.risk,
                  sfEvent.module, storeData, sfEvent.sourceEventHash]
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvals)
-                self.conn.commit()
+                self._cursor.execute(qry, qvals)
+                self._conn.commit()
             except sqlite3.Error as e:
-                raise IOError(f"SQL error encountered when storing event data ({self.dbh})") from e
+                raise IOError(f"SQL error encountered when storing event data ({self._cursor})") from e
 
     # 1 in sfwebui.py
     # 1 in spiderfoot/db.py
@@ -1442,10 +1425,10 @@ class SpiderFootDb:
             SELECT distinct scan_instance_id FROM tbl_scan_results WHERE type <> 'ROOT') \
             ORDER BY started DESC"
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry)
-                return self.dbh.fetchall()
+                self._cursor.execute(qry)
+                return self._cursor.fetchall()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching scan list") from e
 
@@ -1470,10 +1453,10 @@ class SpiderFootDb:
                 WHERE scan_instance_id = ? GROUP BY hourmin, type"
         qvars = [instanceId]
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvars)
-                return self.dbh.fetchall()
+                self._cursor.execute(qry, qvars)
+                return self._cursor.fetchall()
             except sqlite3.Error as e:
                 raise IOError(f"SQL error encountered when fetching history for scan {instanceId}") from e
 
@@ -1548,10 +1531,10 @@ class SpiderFootDb:
         qvars = [instanceId]
 
         rows = []
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvars)
-                rows = self.dbh.fetchall()
+                self._cursor.execute(qry, qvars)
+                rows = self._cursor.fetchall()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when getting source element IDs") from e
 
@@ -1599,10 +1582,10 @@ class SpiderFootDb:
             t.event = c.type AND s.hash in ('%s')" % "','".join(hashIds)
         qvars = [instanceId]
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, qvars)
-                return self.dbh.fetchall()
+                self._cursor.execute(qry, qvars)
+                return self._cursor.fetchall()
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when getting child element IDs") from e
 
@@ -1752,12 +1735,12 @@ class SpiderFootDb:
             (id, scan_instance_id, title, rule_name, rule_descr, rule_risk, rule_id, rule_logic) \
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
 
-        with self.dbhLock:
+        with self._lock:
             try:
-                self.dbh.execute(qry, (
+                self._cursor.execute(qry, (
                     uniqueId, instanceId, correlationTitle, ruleName, ruleDescr, ruleRisk, ruleId, ruleYaml
                 ))
-                self.conn.commit()
+                self._conn.commit()
             except sqlite3.Error as e:
                 raise IOError("Unable to create correlation result in database") from e
 
@@ -1766,13 +1749,13 @@ class SpiderFootDb:
             (correlation_id, event_hash) \
             VALUES (?, ?)"
 
-        with self.dbhLock:
+        with self._lock:
             for eventHash in eventHashes:
                 try:
-                    self.dbh.execute(qry, (
+                    self._cursor.execute(qry, (
                         uniqueId, eventHash
                     ))
-                    self.conn.commit()
+                    self._conn.commit()
                 except sqlite3.Error as e:
                     raise IOError("Unable to create correlation result in database") from e
 
