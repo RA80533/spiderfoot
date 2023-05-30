@@ -2,6 +2,12 @@ import pytest
 from spiderfoot import SpiderFootHelpers
 
 
+collect_ignore_glob = [
+    "integration",
+    "unit/modules/test_*.py",
+]
+
+
 @pytest.fixture(autouse=True)
 def default_options(request):
     request.cls.default_options = {
