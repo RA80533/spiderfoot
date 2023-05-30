@@ -1,5 +1,6 @@
 from . import helpers as SpiderFootHelpers
 from .db import SpiderFootDb
+from .db_schema import orm_registry
 from .event import SpiderFootEvent
 from .threadpool import SpiderFootThreadPool
 from .plugin import SpiderFootPlugin
