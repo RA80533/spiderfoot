@@ -34,9 +34,23 @@ class TblEventType:
     event_type: sqlalchemy.orm.Mapped[str]
 
 
+_tbl_scan_config_rowid = 0
+
 @orm_registry.mapped_as_dataclass
 class TblScanConfig:
     __tablename__ = "tbl_scan_config"
+    
+    @staticmethod
+    def autoincrement() -> int:
+        global _tbl_scan_config_rowid
+        _tbl_scan_config_rowid += 1
+        return _tbl_scan_config_rowid
+    
+    rowid: sqlalchemy.orm.Mapped[int] = mapped_column(
+        default_factory=autoincrement,
+        kw_only=True,
+        primary_key=True,
+    )
     
     scan_instance_id: sqlalchemy.orm.Mapped[str] = mapped_column(
         sqlalchemy.ForeignKey("tbl_scan_instances.guid"),
@@ -67,10 +81,24 @@ class TblScanCorrelationResult:
     rule_logic: sqlalchemy.orm.Mapped[str]
 
 
+_tbl_scan_correlation_results_events_rowid = 0
+
 # TODO Change "tbl_scan_correlation_results_events" to "tbl_scan_correlation_result_event"
 @orm_registry.mapped_as_dataclass
 class TblScanCorrelationResultEvent:
     __tablename__ = "tbl_scan_correlation_results_events"
+    
+    @staticmethod
+    def autoincrement() -> int:
+        global _tbl_scan_correlation_results_events_rowid
+        _tbl_scan_correlation_results_events_rowid += 1
+        return _tbl_scan_correlation_results_events_rowid
+    
+    rowid: sqlalchemy.orm.Mapped[int] = mapped_column(
+        default_factory=autoincrement,
+        kw_only=True,
+        primary_key=True,
+    )
     
     correlation_id: sqlalchemy.orm.Mapped[str] = mapped_column(
         sqlalchemy.ForeignKey("tbl_scan_correlation_results.id"),
@@ -109,9 +137,23 @@ class TblScanInstance:
     )
 
 
+_tbl_scan_log_rowid = 0
+
 @orm_registry.mapped_as_dataclass
 class TblScanLog:
     __tablename__ = "tbl_scan_log"
+    
+    @staticmethod
+    def autoincrement() -> int:
+        global _tbl_scan_log_rowid
+        _tbl_scan_log_rowid += 1
+        return _tbl_scan_log_rowid
+    
+    rowid: sqlalchemy.orm.Mapped[int] = mapped_column(
+        default_factory=autoincrement,
+        kw_only=True,
+        primary_key=True,
+    )
     
     scan_instance_id: sqlalchemy.orm.Mapped[str] = mapped_column(
         sqlalchemy.ForeignKey("tbl_scan_instances.guid"),
@@ -122,6 +164,8 @@ class TblScanLog:
     message: sqlalchemy.orm.Mapped[str | None]
 
 
+_tbl_scan_results_rowid = 0
+
 # TODO Change "tbl_scan_results" to "tbl_scan_result"
 # TODO Fix `confidence` default
 # TODO Fix `visibility` default
@@ -131,6 +175,18 @@ class TblScanLog:
 @orm_registry.mapped_as_dataclass
 class TblScanResult:
     __tablename__ = "tbl_scan_results"
+    
+    @staticmethod
+    def autoincrement() -> int:
+        global _tbl_scan_results_rowid
+        _tbl_scan_results_rowid += 1
+        return _tbl_scan_results_rowid
+    
+    rowid: sqlalchemy.orm.Mapped[int] = mapped_column(
+        default_factory=autoincrement,
+        kw_only=True,
+        primary_key=True,
+    )
     
     scan_instance_id: sqlalchemy.orm.Mapped[str] = mapped_column(
         sqlalchemy.ForeignKey("tbl_scan_instances.guid"),
