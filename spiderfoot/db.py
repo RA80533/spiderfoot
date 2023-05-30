@@ -523,7 +523,7 @@ class SpiderFootDb:
     # 1 in spiderfoot/correlation.py
     # 1 in spiderfoot/db.py
     # 1 in test/unit/spiderfoot/test_spiderfootdb.py
-    def eventTypes(self) -> list:
+    def eventTypes(self) -> typing.Sequence[TblEventType]:
         """Get event types.
 
         Returns:
@@ -534,10 +534,10 @@ class SpiderFootDb:
         """
 
         qry = "SELECT event_descr, event, event_raw, event_type FROM tbl_event_types"
-        with self._lock:
+        with self._sync_session_factory.begin() as ctx:
             try:
-                self._cursor.execute(qry)
-                return self._cursor.fetchall()
+                result = ctx.execute(sqlalchemy.text(qry)).scalars().all()
+                return result
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when retrieving event types") from e
 

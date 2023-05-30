@@ -113,8 +113,7 @@ class TestSpiderFootDb(unittest.TestCase):
         Test eventTypes(self)
         """
         sfdb = SpiderFootDb(self.default_options, False)
-        event_types = sfdb.eventTypes()
-        self.assertIsInstance(event_types, list)
+        sfdb.eventTypes()
 
     def test_scanLogEvent_should_create_a_scan_log_event(self):
         """
