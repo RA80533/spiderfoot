@@ -12,18 +12,24 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 import dataclasses
 import hashlib
+import itertools
 import random
 import re
 import sqlite3
 import threading
 import time
 import typing
+from pathlib import Path
 
 import dacite
+import sqlalchemy
+import sqlalchemy.exc
+import sqlalchemy.orm
 
+from .db_schema import TblEventType
+from .db_schema import orm_registry
 from .event import SpiderFootEvent
 
 
@@ -305,6 +311,9 @@ class SpiderFootDb:
     # Prevent multithread access to sqlite database
     _lock: threading.RLock
 
+    _sync_engine: sqlalchemy.Engine
+    _sync_session_factory: sqlalchemy.orm.sessionmaker[sqlalchemy.orm.Session]
+
     # 44 in test/unit/spiderfoot/test_spiderfootdb.py
     # 35 in sfwebui.py
     #  5 in test/unit/spiderfoot/test_spiderfootplugin.py
@@ -332,14 +341,27 @@ class SpiderFootDb:
 
         database_path = opts['__database']
 
-        # create database directory
-        Path(database_path).parent.mkdir(exist_ok=True, parents=True)
+        self._sync_engine = sqlalchemy.create_engine(
+            f"sqlite+pysqlite://{'/:memory:'}",
+            echo=True,
+        )
+        self._sync_session_factory = sqlalchemy.orm.sessionmaker(
+            self._sync_engine,
+            expire_on_commit=False,
+        )
+
+        if (TODO_create_if_no_exist := False):
+            # create database directory
+            Path(database_path).parent.mkdir(exist_ok=True, parents=True)
 
         # connect() will create the database file if it doesn't exist, but
         # at least we can use this opportunity to ensure we have permissions to
         # read and write to such a file.
         try:
-            self._conn = sqlite3.connect(database_path)
+            if (TODO_use_given_path := False):
+                self._conn = sqlite3.connect(database_path)
+            else:
+                self._conn = sqlite3.connect(f"file:{':memory:'}")
         except Exception as e:
             raise IOError(f"Error connecting to internal database {database_path}") from e
 
@@ -366,17 +388,18 @@ class SpiderFootDb:
 
         self._lock = threading.RLock()
 
-        # Now we actually check to ensure the database file has the schema set
-        # up correctly.
-        with self._lock:
-            try:
-                self._cursor.execute('SELECT COUNT(*) FROM tbl_scan_config')
-                self._conn.create_function("REGEXP", 2, __dbregex__)
-            except sqlite3.Error:
+        if init:
+            # Now we actually check to ensure the database file has the schema set
+            # up correctly.
+            with self._lock:
                 try:
-                    self.create()
-                except Exception as e:
-                    raise IOError("Tried to set up the SpiderFoot database schema, but failed") from e
+                    self._cursor.execute('SELECT COUNT(*) FROM tbl_scan_config')
+                    self._conn.create_function("REGEXP", 2, __dbregex__)
+                except sqlite3.Error:
+                    try:
+                        self.create()
+                    except Exception as e:
+                        raise IOError("Tried to set up the SpiderFoot database schema, but failed") from e
 
     #
     # Back-end database operations
@@ -390,24 +413,16 @@ class SpiderFootDb:
         Raises:
             IOError: database I/O failed
         """
+        tbl_event_type_iter = itertools.starmap(TblEventType, eventDetails)
 
         with self._lock:
             try:
-                for qry in createSchemaQueries:
-                    self._cursor.execute(qry)
-                self._conn.commit()
-                for row in eventDetails:
-                    event = row[0]
-                    event_descr = row[1]
-                    event_raw = row[2]
-                    event_type = row[3]
-                    qry = "INSERT INTO tbl_event_types (event, event_descr, event_raw, event_type) VALUES (?, ?, ?, ?)"
+                with self._sync_engine.begin() as ctx:
+                    orm_registry.metadata.create_all(ctx)
 
-                    self._cursor.execute(qry, (
-                        event, event_descr, event_raw, event_type
-                    ))
-                self._conn.commit()
-            except sqlite3.Error as e:
+                with self._sync_session_factory.begin() as ctx:
+                    ctx.add_all(tbl_event_type_iter)
+            except sqlalchemy.exc.DBAPIError as e:
                 raise IOError("SQL error encountered when setting up database") from e
 
     # 1 in sfscan.py
