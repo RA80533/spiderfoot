@@ -11,21 +11,29 @@
 # -----------------------------------------------------------------
 from __future__ import annotations
 
+import collections
+import logging
+import queue
 import socket
 import time
-import queue
-from time import sleep
-from copy import deepcopy
 from contextlib import suppress
-from collections import OrderedDict
+from copy import deepcopy
+from time import sleep
 
 import dns.resolver
 
-from sflib import SpiderFoot
-from spiderfoot import SpiderFootDb, SpiderFootEvent, SpiderFootPlugin, SpiderFootTarget, SpiderFootHelpers, SpiderFootThreadPool, SpiderFootCorrelator, logger
+import sflib
+from spiderfoot import SpiderFootCorrelator
+from spiderfoot import SpiderFootDb
+from spiderfoot import SpiderFootEvent
+from spiderfoot import SpiderFootHelpers
+from spiderfoot import SpiderFootPlugin
+from spiderfoot import SpiderFootTarget
+from spiderfoot import SpiderFootThreadPool
+from spiderfoot import logger
 
 
-def startSpiderFootScanner(loggingQueue, *args, **kwargs) -> SpiderFootScanner:
+def startSpiderFootScanner(loggingQueue: queue.Queue[logging.LogRecord], *args, **kwargs) -> SpiderFootScanner:
     logger.logWorkerSetup(loggingQueue)
     return SpiderFootScanner(*args, **kwargs)
 
@@ -41,7 +49,7 @@ class SpiderFootScanner():
     __scanId: str
     __status = None
     __config = None
-    __sf: SpiderFoot
+    __sf: sflib.SpiderFoot
     __dbh: SpiderFootDb
     __targetValue = None
     __targetType = None
@@ -110,7 +118,7 @@ class SpiderFootScanner():
             raise ValueError("moduleList is empty")
 
         self.__moduleList = moduleList
-        self.__sf = SpiderFoot(self.__config)
+        self.__sf = sflib.SpiderFoot(self.__config)
         self.__sf.dbh = self.__dbh
 
         # Create a unique ID for this scan in the back-end DB.
@@ -368,7 +376,7 @@ class SpiderFootScanner():
                 return
 
             # sort modules by priority
-            self.__moduleInstances = OrderedDict(sorted(self.__moduleInstances.items(), key=lambda m: m[-1]._priority))
+            self.__moduleInstances = collections.OrderedDict(sorted(self.__moduleInstances.items(), key=lambda m: m[-1]._priority))
 
             # Now we are ready to roll..
             self.__setStatus("RUNNING")

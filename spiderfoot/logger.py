@@ -3,14 +3,13 @@ from __future__ import annotations
 import atexit
 import logging
 import logging.handlers
+import queue
 import sys
 import time
 from contextlib import suppress
-from logging.handlers import QueueHandler, QueueListener
 
-from spiderfoot import SpiderFootDb, SpiderFootHelpers
-from multiprocessing.queues import Queue
-from typing import Optional
+from spiderfoot import SpiderFootDb
+from spiderfoot import SpiderFootHelpers
 
 
 class SpiderFootSqliteLogHandler(logging.Handler):
@@ -36,7 +35,7 @@ class SpiderFootSqliteLogHandler(logging.Handler):
         self.shutdown_hook = False
         super().__init__()
 
-    def emit(self, record: 'logging.LogRecord') -> None:
+    def emit(self, record: logging.LogRecord) -> None:
         """TBD
 
         Args:
@@ -70,14 +69,14 @@ class SpiderFootSqliteLogHandler(logging.Handler):
         self.dbh = SpiderFootDb(self.opts)
 
 
-def logListenerSetup(loggingQueue: Queue[logging.LogRecord], opts: dict = None) -> 'logging.handlers.QueueListener':
+def logListenerSetup(loggingQueue: queue.Queue[logging.LogRecord], opts: dict | None = None) -> logging.handlers.QueueListener:
     """Create and start a SpiderFoot log listener in its own thread.
 
     This function should be called as soon as possible in the main
     process, or whichever process is attached to stdin/stdout.
 
     Args:
-        loggingQueue (Queue[logging.LogRecord]): Queue (accepts both normal and multiprocessing queue types)
+        loggingQueue (queue.Queue[logging.LogRecord]): Queue (accepts both normal and multiprocessing queue types)
                               Must be instantiated in the main process.
         opts (dict): SpiderFoot config
 
@@ -127,22 +126,22 @@ def logListenerSetup(loggingQueue: Queue[logging.LogRecord], opts: dict = None) 
     else:
         handlers = []
 
-    if doLogging and opts is not None:
+    if doLogging:
         sqlite_handler = SpiderFootSqliteLogHandler(opts)
         sqlite_handler.setLevel(logLevel)
         sqlite_handler.setFormatter(log_format)
         handlers.append(sqlite_handler)
-    spiderFootLogListener = QueueListener(loggingQueue, *handlers)
+    spiderFootLogListener = logging.handlers.QueueListener(loggingQueue, *handlers)
     spiderFootLogListener.start()
     atexit.register(stop_listener, spiderFootLogListener)
     return spiderFootLogListener
 
 
-def logWorkerSetup(loggingQueue: Queue[logging.LogRecord]) -> 'logging.Logger':
+def logWorkerSetup(loggingQueue: queue.Queue[logging.LogRecord]) -> logging.Logger:
     """Root SpiderFoot logger.
 
     Args:
-        loggingQueue (Queue[logging.LogRecord]): TBD
+        loggingQueue (queue.Queue[logging.LogRecord]): TBD
 
     Returns:
         logging.Logger: Logger
@@ -151,12 +150,12 @@ def logWorkerSetup(loggingQueue: Queue[logging.LogRecord]) -> 'logging.Logger':
     # Don't do this more than once
     if len(log.handlers) == 0:
         log.setLevel(logging.DEBUG)
-        queue_handler = QueueHandler(loggingQueue)
+        queue_handler = logging.handlers.QueueHandler(loggingQueue)
         log.addHandler(queue_handler)
     return log
 
 
-def stop_listener(listener: 'logging.handlers.QueueListener') -> None:
+def stop_listener(listener: logging.handlers.QueueListener) -> None:
     """TBD.
 
     Args:
