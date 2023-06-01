@@ -290,7 +290,6 @@ class SpiderFoot:
 
         self.log.debug(f"{message}", extra={'scanId': self._scanId})
 
-    # 1 in test/unit/test_spiderfoot.py
     def hashstring(self, string: str) -> str:
         """Returns a SHA256 hash of the specified input.
 
