@@ -47,19 +47,21 @@ class SpiderFootScanner():
     """
 
     __scanId: str
-    __status = None
-    __config = None
+    __status: str | None = None
+    __config: dict[str, ...]
     __sf: sflib.SpiderFoot
     __dbh: SpiderFootDb
-    __targetValue = None
-    __targetType = None
+    __targetValue: str
+    __targetType: str
     __moduleList: list[str]
     __target: SpiderFootTarget
-    __moduleInstances = dict()
-    __modconfig = dict()
-    __scanName = None
+    __moduleInstances = dict[str, ...]()
+    __modconfig = dict[str, ...]()
+    __scanName: str
+    __sharedThreadPool: SpiderFootThreadPool
+    eventQueue: queue.Queue[SpiderFootEvent] | None
 
-    def __init__(self, scanName: str, scanId: str, targetValue: str, targetType: str, moduleList: list[str], globalOpts: dict, start: bool = True) -> None:
+    def __init__(self, scanName: str, scanId: str, targetValue: str, targetType: str, moduleList: list[str], globalOpts: dict[str, ...], start: bool = True) -> None:
         """Initialize SpiderFootScanner object.
 
         Args:
@@ -233,7 +235,7 @@ class SpiderFootScanner():
         return self.__scanId
 
     @property
-    def status(self) -> str:
+    def status(self) -> str | None:
         return self.__status
 
     def __setStatus(self, status: str, started: float | None = None, ended: float | None = None) -> None:
