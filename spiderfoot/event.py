@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import random
-import time
+from time import time
 
 
 class SpiderFootEvent():
@@ -24,20 +24,20 @@ class SpiderFootEvent():
         __id (str): Unique ID of the event, generated using eventType, generated, module, and a random integer
     """
 
-    _generated = None
-    _eventType = None
-    _confidence = None
-    _visibility = None
-    _risk = None
-    _module = None
-    _data = None
-    _sourceEvent = None
-    _sourceEventHash = None
-    _moduleDataSource = None
-    _actualSource = None
-    __id = None
+    _generated: float
+    _eventType: str
+    _confidence: int
+    _visibility: int
+    _risk: int
+    _module: str
+    _data: str
+    _sourceEvent: SpiderFootEvent | None
+    _sourceEventHash: str
+    _moduleDataSource: str | None = None
+    _actualSource: str | None = None
+    __id: str
 
-    def __init__(self, eventType: str, data: str, module: str, sourceEvent: 'SpiderFootEvent | None') -> None:
+    def __init__(self, eventType: str, data: str, module: str, sourceEvent: SpiderFootEvent | None) -> None:
         """Initialize SpiderFoot event object.
 
         Args:
@@ -46,7 +46,7 @@ class SpiderFootEvent():
             module (str): Module from which the event originated
             sourceEvent (SpiderFootEvent): SpiderFootEvent event that triggered this event
         """
-        self._generated = time.time()
+        self._generated = time()
         self.data = data
         self.eventType = eventType
         self.module = module
@@ -110,7 +110,7 @@ class SpiderFootEvent():
         return self._data
 
     @property
-    def sourceEvent(self) -> 'SpiderFootEvent':
+    def sourceEvent(self) -> SpiderFootEvent | None:
         return self._sourceEvent
 
     @property
@@ -118,11 +118,11 @@ class SpiderFootEvent():
         return self._sourceEventHash
 
     @property
-    def actualSource(self) -> str:
+    def actualSource(self) -> str | None:
         return self._actualSource
 
     @property
-    def moduleDataSource(self) -> str:
+    def moduleDataSource(self) -> str | None:
         return self._moduleDataSource
 
     @property
@@ -253,7 +253,7 @@ class SpiderFootEvent():
         self._data = data
 
     @sourceEvent.setter
-    def sourceEvent(self, sourceEvent: 'SpiderFootEvent | None') -> None:
+    def sourceEvent(self, sourceEvent: SpiderFootEvent | None) -> None:
         """Source event which lead to this event.
 
         Args:
@@ -274,8 +274,8 @@ class SpiderFootEvent():
 
         self._sourceEvent = sourceEvent
         
-        if sourceEvent is not None:
-            self._sourceEventHash = self.sourceEvent.hash
+        if self._sourceEvent is not None:
+            self._sourceEventHash = self._sourceEvent.hash
         else:
             self._sourceEventHash = "ROOT"
 
