@@ -5,6 +5,15 @@ import random
 from time import time
 
 
+# 34 in test/unit/spiderfoot/test_spiderfootevent.py
+# 17 in test/unit/spiderfoot/test_spiderfootdb.py
+# 11 in test/unit/spiderfoot/test_spiderfootplugin.py
+#  6 in sfscan.py
+#  5 in spiderfoot/event.py
+#  4 in spiderfoot/db.py
+#  3 in spiderfoot/plugin.py
+#  1 in spiderfoot/__init__.py
+# … 1,841 others
 class SpiderFootEvent():
     """SpiderFootEvent object representing identified data and associated meta data.
 
@@ -37,6 +46,7 @@ class SpiderFootEvent():
     _actualSource: str | None = None
     __id: str
 
+    # 1,365 in total
     def __init__(self, eventType: str, data: str, module: str, sourceEvent: SpiderFootEvent | None) -> None:
         """Initialize SpiderFoot event object.
 
@@ -56,6 +66,8 @@ class SpiderFootEvent():
         self.sourceEvent = sourceEvent
         self.__id = f"{self.eventType}{self.generated}{self.module}{random.SystemRandom().randint(0, 99999999)}"
 
+    # 3 in spiderfoot/event.py
+    # 2 in spiderfoot/db.py
     @property
     def generated(self) -> float:
         """Timestamp of event creation time.
@@ -65,6 +77,12 @@ class SpiderFootEvent():
         """
         return self._generated
 
+    # 9 in spiderfoot/event.py
+    # 4 in spiderfoot/db.py
+    # 3 in spiderfoot/plugin.py
+    # 2 in sfscan.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
+    # … 4 others
     @property
     def eventType(self) -> str:
         """Event type.
@@ -74,6 +92,10 @@ class SpiderFootEvent():
         """
         return self._eventType
 
+    # 5 in test/unit/spiderfoot/test_spiderfooteventpy
+    # 4 in spiderfoot/event.py
+    # 3 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     @property
     def confidence(self) -> int:
         """How sure are we of this data's validity.
@@ -83,6 +105,10 @@ class SpiderFootEvent():
         """
         return self._confidence
 
+    # 5 in test/unit/spiderfoot/test_spiderfooteventpy
+    # 4 in spiderfoot/event.py
+    # 3 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     @property
     def visibility(self) -> int:
         """How 'visible' was this data (0 to 100).
@@ -92,6 +118,10 @@ class SpiderFootEvent():
         """
         return self._visibility
 
+    # 5 in test/unit/spiderfoot/test_spiderfooteventpy
+    # 4 in spiderfoot/event.py
+    # 3 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     @property
     def risk(self) -> int:
         """How much risk does this data represent.
@@ -101,30 +131,53 @@ class SpiderFootEvent():
         """
         return self._risk
 
+    # 6 in spiderfoot/event.py
+    # 2 in spiderfoot/db.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     @property
     def module(self) -> str:
         return self._module
 
+    # 7 in spiderfoot/event.py
+    # 2 in spiderfoot/db.py
+    # 2 in spiderfoot/plugin.py
+    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
+    # … 3 others
     @property
     def data(self) -> str:
         return self._data
 
+    # 7 in spiderfoot/event.py
+    # 5 in spiderfoot/plugin.py
+    # 2 in spiderfoot/db.py
     @property
     def sourceEvent(self) -> SpiderFootEvent | None:
         return self._sourceEvent
 
+    # 2 in spiderfoot/db.py
+    # 1 in spiderfoot/event.py
+    # 1 in test/unit/spiderfoot/test_spiderfootevent.py
     @property
     def sourceEventHash(self) -> str:
         return self._sourceEventHash
 
+    # 3 in spiderfoot/event.py
+    # 2 in test/unit/spiderfoot/test_spiderfootevent.py
+    # … 17 others
     @property
     def actualSource(self) -> str | None:
         return self._actualSource
 
+    # 3 in spiderfoot/event.py
+    # 2 in test/unit/spiderfoot/test_spiderfootevent.py
+    # … 54 others
     @property
     def moduleDataSource(self) -> str | None:
         return self._moduleDataSource
 
+    # 2 in spiderfoot/event.py
+    # 2 in test/unit/spiderfoot/test_spiderfootevent.py
+    # 1 in spiderfoot/db.py
     @property
     def hash(self) -> str:
         """Unique SHA256 hash of the event, or "ROOT".
@@ -287,6 +340,8 @@ class SpiderFootEvent():
     def moduleDataSource(self, moduleDataSource: str) -> None:
         self._moduleDataSource = moduleDataSource
 
+    # 2 in test/unit/spiderfoot/test_spiderfootevent.py
+    # 1 in spiderfoot/event.py
     def asDict(self) -> dict:
         """Event object as dictionary.
 
