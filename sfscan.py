@@ -33,11 +33,16 @@ from spiderfoot import SpiderFootThreadPool
 from spiderfoot import logger
 
 
+# 4 in sfwebui.py
+# 2 in sf.py
+# 1 in sfscan;.py
 def startSpiderFootScanner(loggingQueue: queue.Queue[logging.LogRecord], *args, **kwargs) -> SpiderFootScanner:
     logger.logWorkerSetup(loggingQueue)
     return SpiderFootScanner(*args, **kwargs)
 
 
+# 21 in test/unit/test_spiderfootscanner.py
+#  3 in sfscan.py
 class SpiderFootScanner():
     """SpiderFootScanner object.
 
