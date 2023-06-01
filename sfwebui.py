@@ -17,7 +17,7 @@ import io
 import json
 import logging
 import logging.handlers
-import multiprocessing as mp
+import multiprocessing
 import queue
 import random
 import string
@@ -42,7 +42,7 @@ from spiderfoot import __version__
 from spiderfoot.logger import logListenerSetup
 from spiderfoot.logger import logWorkerSetup
 
-mp.set_start_method("spawn", force=True)
+multiprocessing.set_start_method("spawn", force=True)
 
 
 class SpiderFootWebUi:
@@ -762,7 +762,7 @@ class SpiderFootWebUi:
         # Start running a new scan
         scanId = SpiderFootHelpers.genScanInstanceId()
         try:
-            p = mp.Process(target=sfscan.startSpiderFootScanner, args=(self.loggingQueue, scanname, scanId, scantarget, targetType, modlist, cfg))
+            p = multiprocessing.Process(target=sfscan.startSpiderFootScanner, args=(self.loggingQueue, scanname, scanId, scantarget, targetType, modlist, cfg))
             p.daemon = True
             p.start()
         except Exception as e:
@@ -816,7 +816,7 @@ class SpiderFootWebUi:
             # Start running a new scan
             scanId = SpiderFootHelpers.genScanInstanceId()
             try:
-                p = mp.Process(target=sfscan.startSpiderFootScanner, args=(self.loggingQueue, scanname, scanId, scantarget, targetType, modlist, cfg))
+                p = multiprocessing.Process(target=sfscan.startSpiderFootScanner, args=(self.loggingQueue, scanname, scanId, scantarget, targetType, modlist, cfg))
                 p.daemon = True
                 p.start()
             except Exception as e:
@@ -1410,7 +1410,7 @@ class SpiderFootWebUi:
         # Start running a new scan
         scanId = SpiderFootHelpers.genScanInstanceId()
         try:
-            p = mp.Process(target=sfscan.tartSpiderFootScanner, args=(self.loggingQueue, scanname, scanId, scantarget, targetType, modlist, cfg))
+            p = multiprocessing.Process(target=sfscan.tartSpiderFootScanner, args=(self.loggingQueue, scanname, scanId, scantarget, targetType, modlist, cfg))
             p.daemon = True
             p.start()
         except Exception as e:
