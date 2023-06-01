@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import csv
 import html
+import io
 import json
 import logging
 import logging.handlers
@@ -22,20 +23,16 @@ import random
 import string
 import time
 from copy import deepcopy
-from io import BytesIO, StringIO
 from operator import itemgetter
 
 import cherrypy
 import cherrypy._cpreqbody
+import mako.lookup
+import mako.template
 import openpyxl
 import secure
-from cherrypy import _cperror
-
-from mako.lookup import TemplateLookup
-from mako.template import Template
-
-import openpyxl
-import secure
+from cherrypy._cperror import format_exc
+from cherrypy._cperror import get_error_page
 
 import sflib
 import sfscan
@@ -51,12 +48,12 @@ mp.set_start_method("spawn", force=True)
 class SpiderFootWebUi:
     """SpiderFoot web interface."""
 
-    lookup = TemplateLookup(directories=[''])
+    lookup = mako.lookup.TemplateLookup(directories=[''])
     defaultConfig: dict
     config: dict[str, ...]
     loggingQueue: queue.Queue[logging.LogRecord]
     log: logging.Logger
-    token = None
+    token: int | None = None
     docroot: str
 
     def __init__(self, web_config: dict, config: dict, loggingQueue: queue.Queue[logging.LogRecord] | None = None) -> None:
@@ -133,7 +130,7 @@ class SpiderFootWebUi:
         cherrypy.response.status = 500
 
         if self.config.get('_debug'):
-            cherrypy.response.body = _cperror.get_error_page(status=500, traceback=_cperror.format_exc())
+            cherrypy.response.body = get_error_page(status=500, traceback=format_exc())
         else:
             cherrypy.response.body = b"<html><body>Error</body></html>"
 
@@ -163,7 +160,7 @@ class SpiderFootWebUi:
         Returns:
             str: HTTP response template
         """
-        templ = Template(filename='spiderfoot/templates/error.tmpl', lookup=self.lookup)
+        templ = mako.template.Template(filename='spiderfoot/templates/error.tmpl', lookup=self.lookup)
         return templ.render(message='Not Found', docroot=self.docroot, status=status, version=__version__)
 
     def jsonify_error(self, status: str, message: str) -> dict:
@@ -194,7 +191,7 @@ class SpiderFootWebUi:
         Returns:
             str
         """
-        templ = Template(filename='spiderfoot/templates/error.tmpl', lookup=self.lookup)
+        templ = mako.template.Template(filename='spiderfoot/templates/error.tmpl', lookup=self.lookup)
         output = templ.render(message=message, docroot=self.docroot, version=__version__)
         if isinstance(output, bytes):
             return output.decode()
@@ -277,7 +274,7 @@ class SpiderFootWebUi:
         if not data:
             return self.error("Scan ID not found.")
 
-        fileobj = StringIO()
+        fileobj = io.StringIO()
         parser = csv.writer(fileobj, dialect=dialect)
         parser.writerow(["Date", "Component", "Type", "Event", "Event ID"])
         for row in data:
@@ -341,7 +338,7 @@ class SpiderFootWebUi:
             return buildExcel(rows, headings, sheetNameIndex=0)
 
         if filetype.lower() == 'csv':
-            fileobj = StringIO()
+            fileobj = io.StringIO()
             parser = csv.writer(fileobj, dialect=dialect)
             parser.writerow(headings)
 
@@ -397,7 +394,7 @@ class SpiderFootWebUi:
                                    "F/P", "Data"], sheetNameIndex=1)
 
         if filetype.lower() == 'csv':
-            fileobj = StringIO()
+            fileobj = io.StringIO()
             parser = csv.writer(fileobj, dialect=dialect)
             parser.writerow(["Updated", "Type", "Module", "Source", "F/P", "Data"])
             for row in data:
@@ -464,7 +461,7 @@ class SpiderFootWebUi:
                                    "Source", "F/P", "Data"], sheetNameIndex=2)
 
         if filetype.lower() == 'csv':
-            fileobj = StringIO()
+            fileobj = io.StringIO()
             parser = csv.writer(fileobj, dialect=dialect)
             parser.writerow(["Scan Name", "Updated", "Type", "Module", "Source", "F/P", "Data"])
             for row in data:
@@ -520,7 +517,7 @@ class SpiderFootWebUi:
                                    "F/P", "Data"], sheetNameIndex=1)
 
         if filetype.lower() == 'csv':
-            fileobj = StringIO()
+            fileobj = io.StringIO()
             parser = csv.writer(fileobj, dialect=dialect)
             parser.writerow(["Updated", "Type", "Module", "Source", "F/P", "Data"])
             for row in data:
@@ -831,7 +828,7 @@ class SpiderFootWebUi:
                 self.log.info("Waiting for the scan to initialize...")
                 time.sleep(1)
 
-        templ = Template(filename='spiderfoot/templates/scanlist.tmpl', lookup=self.lookup)
+        templ = mako.template.Template(filename='spiderfoot/templates/scanlist.tmpl', lookup=self.lookup)
         return templ.render(rerunscans=True, docroot=self.docroot, pageid="SCANLIST", version=__version__)
 
     @cherrypy.expose
@@ -843,7 +840,7 @@ class SpiderFootWebUi:
         """
         dbh = SpiderFootDb(self.config)
         types = dbh.eventTypes()
-        templ = Template(filename='spiderfoot/templates/newscan.tmpl', lookup=self.lookup)
+        templ = mako.template.Template(filename='spiderfoot/templates/newscan.tmpl', lookup=self.lookup)
         return templ.render(pageid='NEWSCAN', types=types, docroot=self.docroot,
                             modules=self.config['__modules__'], scanname="",
                             selectedmods="", scantarget="", version=__version__)
@@ -880,7 +877,7 @@ class SpiderFootWebUi:
 
         modlist = scanconfig['_modulesenabled'].split(',')
 
-        templ = Template(filename='spiderfoot/templates/newscan.tmpl', lookup=self.lookup)
+        templ = mako.template.Template(filename='spiderfoot/templates/newscan.tmpl', lookup=self.lookup)
         return templ.render(pageid='NEWSCAN', types=types, docroot=self.docroot,
                             modules=self.config['__modules__'], selectedmods=modlist,
                             scanname=str(scanname),
@@ -893,7 +890,7 @@ class SpiderFootWebUi:
         Returns:
             str: Scan list page HTML
         """
-        templ = Template(filename='spiderfoot/templates/scanlist.tmpl', lookup=self.lookup)
+        templ = mako.template.Template(filename='spiderfoot/templates/scanlist.tmpl', lookup=self.lookup)
         return templ.render(pageid='SCANLIST', docroot=self.docroot, version=__version__)
 
     @cherrypy.expose
@@ -911,7 +908,7 @@ class SpiderFootWebUi:
         if res is None:
             return self.error("Scan ID not found.")
 
-        templ = Template(filename='spiderfoot/templates/scaninfo.tmpl', lookup=self.lookup, input_encoding='utf-8')
+        templ = mako.template.Template(filename='spiderfoot/templates/scaninfo.tmpl', lookup=self.lookup, input_encoding='utf-8')
         return templ.render(id=id, name=html.escape(res[0]), status=res[5], docroot=self.docroot, version=__version__,
                             pageid="SCANLIST")
 
@@ -925,7 +922,7 @@ class SpiderFootWebUi:
         Returns:
             str: scan options page HTML
         """
-        templ = Template(filename='spiderfoot/templates/opts.tmpl', lookup=self.lookup)
+        templ = mako.template.Template(filename='spiderfoot/templates/opts.tmpl', lookup=self.lookup)
         self.token = random.SystemRandom().randint(0, 99999999)
         return templ.render(opts=self.config, pageid='SETTINGS', token=self.token, version=__version__,
                             updated=updated, docroot=self.docroot)
@@ -1857,7 +1854,7 @@ def buildExcel(data: list, columnNames: list[str], sheetNameIndex: int = 0) -> s
     workbook._sheets.sort(key=lambda ws: ws.title)
     
     # Save workbook
-    with BytesIO() as f:
+    with io.BytesIO() as f:
         workbook.save(f)
         f.seek(0)
         return f.read()
