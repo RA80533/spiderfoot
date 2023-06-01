@@ -45,17 +45,38 @@ from spiderfoot.logger import logWorkerSetup
 multiprocessing.set_start_method("spawn", force=True)
 
 
+# 60 in test/unit/test_spiderfootwebui.py
+#  2 in sf.py
+#  2 in test/integration/test_sfwebui.py
+#  1 in sfwebui.py
 class SpiderFootWebUi:
     """SpiderFoot web interface."""
 
+    # 9 in sfwebui.py
     lookup = mako.lookup.TemplateLookup(directories=[''])
+
+    # 6 in sfwebui.py
     defaultConfig: dict
+
+    # 65 in sfwebui.py
     config: dict[str, ...]
+
+    # 8 in sfwebui.py
     loggingQueue: queue.Queue[logging.LogRecord]
+
+    # 8 in sfwebui.py
     log: logging.Logger
+
+    # 7 in sfwebui.py
     token: int | None = None
+
+    # 14 in sfwebui.py
     docroot: str
 
+    # 58 in test/unit/test_spiderfootwebui.py
+    #  1 in sf.py
+    #  1 in sfwebui.py
+    #  1 in test/integration/test_sfwebui.py
     def __init__(self, web_config: dict, config: dict, loggingQueue: queue.Queue[logging.LogRecord] | None = None) -> None:
         """Initialize web server.
 
