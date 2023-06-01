@@ -45,7 +45,14 @@ from typing import Any, Dict
 # For hiding the SSL warnings coming from the requests lib
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # noqa: DUO131
 
-
+# 81 in test/unit/test_spiderfoot.py
+# 12 in test/unit/test_modules.py
+#  5 in sfwebui.py
+#  2 in sf.py
+#  2 in sfscan.py
+#  2 in spiderfoot/_fetch.py
+#  1 in sflib.py
+# … 1,050 others
 class SpiderFoot:
     """SpiderFoot
 
@@ -55,11 +62,23 @@ class SpiderFoot:
         socksProxy (str): SOCKS proxy
         opts (dict): configuration options
     """
+    # 3 in sflib.py
     _dbh = None
-    _scanId = None
-    _socksProxy = None
-    opts = dict()
+    # 8 in sflib.py
+    _scanId: str | None = None
+    # 3 in sflib.py
+    _socksProxy: str | None = None
+    # 40 in test/unit/test_spiderfoot.py
+    # 16 in sflib.py
+    opts: dict
+    # 7 in sflib.py
+    log: logging.Logger
 
+    # 78 in test/unit/test_spiderfoot.py
+    # 11 in test/unit/test_modules.py
+    #  1 in sf.py
+    #  1 in sflib.py
+    #  1 in test/unit/spiderfoot/test_spiderfootplugin.py
     def __init__(self, options: dict) -> None:
         """Initialize SpiderFoot object.
 
@@ -84,6 +103,10 @@ class SpiderFoot:
             res.nameservers = [self.opts['_dnsserver']]
             dns.resolver.override_system_resolver(res)
 
+    # 4 in test/unit/test_modules.py
+    # 3 in sflib.py
+    # 2 in test/unit/test_spiderfoot.py
+    # 1 in sfscan.py
     @property
     def dbh(self):
         """Database handle
@@ -93,6 +116,9 @@ class SpiderFoot:
         """
         return self._dbh
 
+    # 3 in sflib.py
+    # 2 in test/unit/test_spiderfoot.py
+    # 1 in sfscan.py
     @property
     def scanId(self) -> str:
         """Scan instance ID
@@ -102,6 +128,10 @@ class SpiderFoot:
         """
         return self._scanId
 
+    # 9 in sflib.py
+    # 3 in spiderfoot/_fetch.py
+    # 2 in sfscan.py
+    # 2 in test/unit/test_spiderfoot.py
     @property
     def socksProxy(self) -> str:
         """SOCKS proxy
@@ -144,6 +174,9 @@ class SpiderFoot:
         """
         self._socksProxy = socksProxy
 
+    # 3 in test/unit/test_spiderfoot.py
+    # 2 in sfscan.py
+    # 1 in sflib.py
     def optValueToData(self, val: str) -> str:
         """Supplied an option value, return the data based on what the
         value is. If val is a URL, you'll get back the fetched content,
@@ -184,6 +217,10 @@ class SpiderFoot:
 
         return val
 
+    # 24 in sflib.py
+    # 10 in sfscan.py
+    #  5 in spiderfoot/_fetch.py
+    #  1 in test/unit/test_spiderfoot.py
     def error(self, message: str) -> None:
         """Print and log an error message
 
@@ -195,6 +232,7 @@ class SpiderFoot:
 
         self.log.error(message, extra={'scanId': self._scanId})
 
+    # 1 in test/unit/test_spiderfoot.py
     def fatal(self, error: str) -> typing.Never:
         """Print an error message and stacktrace then exit.
 
@@ -207,6 +245,9 @@ class SpiderFoot:
 
         sys.exit(-1)
 
+    # 10 in sfscan.py
+    #  1 in sflib.py
+    #  1 in test/unit/test_spiderfoot.py
     def status(self, message: str) -> None:
         """Log and print a status message.
 
@@ -218,6 +259,9 @@ class SpiderFoot:
 
         self.log.info(message, extra={'scanId': self._scanId})
 
+    # 8 in sflib.py
+    # 5 in spiderfoot/_fetch.py
+    # 1 in test/unit/test_spiderfoot.py
     def info(self, message: str) -> None:
         """Log and print an info message.
 
@@ -229,6 +273,10 @@ class SpiderFoot:
 
         self.log.info(f"{message}", extra={'scanId': self._scanId})
 
+    # 28 in sflib.py
+    # 12 in spiderfoot/_fetch.py
+    #  9 in sfscan.py
+    #  1 in test/unit/test_spiderfoot.py
     def debug(self, message: str) -> None:
         """Log and print a debug message.
 
@@ -242,6 +290,7 @@ class SpiderFoot:
 
         self.log.debug(f"{message}", extra={'scanId': self._scanId})
 
+    # 1 in test/unit/test_spiderfoot.py
     def hashstring(self, string: str) -> str:
         """Returns a SHA256 hash of the specified input.
 
@@ -960,6 +1009,7 @@ class SpiderFoot:
         sock.settimeout(int(timeout))
         return sock
 
+    # 1 in test/unit/test_spiderfoot.py
     def safeSSLSocket(self, host: str, port: int, timeout: int) -> 'ssl.SSLSocket':
         """Create a safe SSL connection that's using SOCKs/TOR if it was enabled.
 
@@ -978,6 +1028,8 @@ class SpiderFoot:
         sock.do_handshake()
         return sock
 
+    # 5 in test/unit/test_spiderfoot.py
+    # 1 in sflib.py
     def parseCert(self, rawcert: str, fqdn: str | None = None, expiringdays: int = 30) -> dict | None:
         """Parse a PEM-format SSL certificate.
 
@@ -1085,6 +1137,9 @@ class SpiderFoot:
 
         return ret
 
+    # 6 in sflib.py
+    # 4 in spiderfoot/_fetch.py
+    # 1 in test/unit/test_spiderfoot.py
     def getSession(self) -> 'requests.sessions.Session':
         """Return requests session object.
 
@@ -1099,6 +1154,9 @@ class SpiderFoot:
             }
         return session
 
+    # 11 in sflib.py
+    # 10 in spiderfoot/_fetch.py
+    #  1 in test/unit/test_spiderfoot.py
     def removeUrlCreds(self, url: str) -> str:
         """Remove potentially sensitive strings (such as "key=..." and "password=...") from a string.
 
@@ -1123,6 +1181,8 @@ class SpiderFoot:
 
         return ret
 
+    # 9 in test/unit/test_spiderfoot.py
+    # 1 in sflib.py
     def isValidLocalOrLoopbackIp(self, ip: str) -> bool:
         """Check if the specified IPv4 or IPv6 address is a loopback or local network IP address (IPv4 RFC1918 / IPv6 RFC4192 ULA).
 
@@ -1143,6 +1203,9 @@ class SpiderFoot:
 
         return False
 
+    # 9 in test/unit/test_spiderfoot.py
+    # 2 in sflib.py
+    # 1 in spiderfoot/_fetch.py
     def useProxyForUrl(self, url: str) -> bool:
         """Check if the configured proxy should be used to connect to a specified URL.
 
@@ -1193,6 +1256,9 @@ class SpiderFoot:
 
         return True
 
+    # 7 in test/unit/test_spiderfoot.py
+    # 6 in sflib.py
+    # 1 in spiderfoot/_fetch.py
     def fetchUrl(
         self,
         url: str,
@@ -1441,6 +1507,7 @@ class SpiderFoot:
         self.info(f"Fetched {self.removeUrlCreds(url)} ({len(result['content'] or '')} bytes in {t}s)")
         return result
 
+    # 1 in test/unit/test_spiderfoot.py
     def checkDnsWildcard(self, target: str) -> bool:
         """Check if wildcard DNS is enabled for a domain by looking up a random subdomain.
 
@@ -1461,6 +1528,7 @@ class SpiderFoot:
 
         return True
 
+    # … 6 others
     def cveInfo(self, cveId: str, sources: str = "circl,nist") -> (str, str) | None:
         """Look up a CVE ID for more information in the first available source.
 
@@ -1544,6 +1612,7 @@ class SpiderFoot:
 
         return (eventType, f"{cveId}\nScore: Unknown\nDescription: Unknown")
 
+    # 1 in test/unit/test_spiderfoot.py
     def googleIterate(self, searchString: str, opts: dict | None = None) -> dict | None:
         """Request search results from the Google API.
 
@@ -1608,6 +1677,7 @@ class SpiderFoot:
             "webSearchUrl": f"https://www.google.com/search?q={search_string}&{params}"
         }
 
+    # 1 in test/unit/test_spiderfoot.py
     def bingIterate(self, searchString: str, opts: dict | None = None) -> dict | None:
         """Request search results from the Bing API.
 

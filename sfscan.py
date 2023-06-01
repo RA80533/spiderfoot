@@ -66,6 +66,8 @@ class SpiderFootScanner():
     __sharedThreadPool: SpiderFootThreadPool
     eventQueue: queue.Queue[SpiderFootEvent] | None
 
+    # 16 in test/unit/test_spiderfootscanner.py
+    #  2 in sfscan.py
     def __init__(self, scanName: str, scanId: str, targetValue: str, targetType: str, moduleList: list[str], globalOpts: dict[str, ...], start: bool = True) -> None:
         """Initialize SpiderFootScanner object.
 
