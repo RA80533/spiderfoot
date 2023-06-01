@@ -17,6 +17,7 @@ import json
 import logging
 import logging.handlers
 import multiprocessing as mp
+import queue
 import random
 import string
 import time
@@ -26,23 +27,23 @@ from operator import itemgetter
 
 import cherrypy
 import cherrypy._cpreqbody
+import openpyxl
+import secure
 from cherrypy import _cperror
 
 from mako.lookup import TemplateLookup
 from mako.template import Template
 
 import openpyxl
-
 import secure
 
-from sflib import SpiderFoot
-
-from sfscan import startSpiderFootScanner
-
+import sflib
+import sfscan
 from spiderfoot import SpiderFootDb
 from spiderfoot import SpiderFootHelpers
 from spiderfoot import __version__
-from spiderfoot.logger import logListenerSetup, logWorkerSetup
+from spiderfoot.logger import logListenerSetup
+from spiderfoot.logger import logWorkerSetup
 
 mp.set_start_method("spawn", force=True)
 
@@ -51,12 +52,14 @@ class SpiderFootWebUi:
     """SpiderFoot web interface."""
 
     lookup = TemplateLookup(directories=[''])
-    defaultConfig = dict()
-    config = dict()
+    defaultConfig: dict
+    config: dict[str, ...]
+    loggingQueue: queue.Queue[logging.LogRecord]
+    log: logging.Logger
     token = None
-    docroot = ''
+    docroot: str
 
-    def __init__(self, web_config: dict, config: dict, loggingQueue: 'logging.handlers.QueueListener' | None = None) -> None:
+    def __init__(self, web_config: dict, config: dict, loggingQueue: queue.Queue[logging.LogRecord] | None = None) -> None:
         """Initialize web server.
 
         Args:
@@ -78,18 +81,18 @@ class SpiderFootWebUi:
         if not config:
             raise ValueError("web_config is empty")
 
-        self.docroot: str = web_config.get('root', '/').rstrip('/')
+        self.docroot = web_config.get('root', '/').rstrip('/')
 
         # 'config' supplied will be the defaults, let's supplement them
         # now with any configuration which may have previously been saved.
         self.defaultConfig = deepcopy(config)
         dbh = SpiderFootDb(self.defaultConfig, init=True)
-        sf = SpiderFoot(self.defaultConfig)
+        sf = sflib.SpiderFoot(self.defaultConfig)
         self.config = sf.configUnserialize(dbh.configGet(), self.defaultConfig)
 
         # Set up logging
         if loggingQueue is None:
-            self.loggingQueue: mp.Queue[logging.LogRecord] = mp.Queue()
+            self.loggingQueue = queue.Queue()
             logListenerSetup(self.loggingQueue, self.config)
         else:
             self.loggingQueue = loggingQueue
@@ -762,7 +765,7 @@ class SpiderFootWebUi:
         # Start running a new scan
         scanId = SpiderFootHelpers.genScanInstanceId()
         try:
-            p = mp.Process(target=startSpiderFootScanner, args=(self.loggingQueue, scanname, scanId, scantarget, targetType, modlist, cfg))
+            p = mp.Process(target=sfscan.startSpiderFootScanner, args=(self.loggingQueue, scanname, scanId, scantarget, targetType, modlist, cfg))
             p.daemon = True
             p.start()
         except Exception as e:
@@ -816,7 +819,7 @@ class SpiderFootWebUi:
             # Start running a new scan
             scanId = SpiderFootHelpers.genScanInstanceId()
             try:
-                p = mp.Process(target=startSpiderFootScanner, args=(self.loggingQueue, scanname, scanId, scantarget, targetType, modlist, cfg))
+                p = mp.Process(target=sfscan.startSpiderFootScanner, args=(self.loggingQueue, scanname, scanId, scantarget, targetType, modlist, cfg))
                 p.daemon = True
                 p.start()
             except Exception as e:
@@ -937,7 +940,7 @@ class SpiderFootWebUi:
         Returns:
             str: Configuration settings
         """
-        sf = SpiderFoot(self.config)
+        sf = sflib.SpiderFoot(self.config)
         conf = sf.configSerialize(self.config)
         content = ""
 
@@ -1010,11 +1013,11 @@ class SpiderFootWebUi:
         return ""
 
     @cherrypy.expose
-    def savesettings(self, allopts: str, token: str, configFile: 'cherrypy._cpreqbody.Part' | None = None) -> None:
+    def savesettings(self, allopts: str, token: str, configFile: cherrypy._cpreqbody.Part | None = None) -> None:
         """Save settings, also used to completely reset them to default.
 
         Args:
-            allopts: TBD
+            allopts (str): TBD
             token (str): CSRF token
             configFile (cherrypy._cpreqbody.Part): TBD
 
@@ -1068,7 +1071,7 @@ class SpiderFootWebUi:
 
             # Make a new config where the user options override
             # the current system config.
-            sf = SpiderFoot(self.config)
+            sf = sflib.SpiderFoot(self.config)
             self.config = sf.configUnserialize(cleanopts, currentopts)
             dbh.configSet(sf.configSerialize(self.config))
         except Exception as e:
@@ -1081,7 +1084,7 @@ class SpiderFootWebUi:
         """Save settings, also used to completely reset them to default.
 
         Args:
-            allopts: TBD
+            allopts (str): TBD
             token (str): CSRF token
 
         Returns:
@@ -1110,7 +1113,7 @@ class SpiderFootWebUi:
 
             # Make a new config where the user options override
             # the current system config.
-            sf = SpiderFoot(self.config)
+            sf = sflib.SpiderFoot(self.config)
             self.config = sf.configUnserialize(cleanopts, currentopts)
             dbh.configSet(sf.configSerialize(self.config))
         except Exception as e:
@@ -1350,7 +1353,7 @@ class SpiderFootWebUi:
 
         # Snapshot the current configuration to be used by the scan
         cfg = deepcopy(self.config)
-        sf = SpiderFoot(cfg)
+        sf = sflib.SpiderFoot(cfg)
 
         modlist = list()
 
@@ -1410,7 +1413,7 @@ class SpiderFootWebUi:
         # Start running a new scan
         scanId = SpiderFootHelpers.genScanInstanceId()
         try:
-            p = mp.Process(target=startSpiderFootScanner, args=(self.loggingQueue, scanname, scanId, scantarget, targetType, modlist, cfg))
+            p = mp.Process(target=sfscan.tartSpiderFootScanner, args=(self.loggingQueue, scanname, scanId, scantarget, targetType, modlist, cfg))
             p.daemon = True
             p.start()
         except Exception as e:
@@ -1809,6 +1812,7 @@ class SpiderFootWebUi:
         return retdata
 
 
+# 5 in sfwebui.py
 def buildExcel(data: list, columnNames: list[str], sheetNameIndex: int = 0) -> str:
     """Convert supplied raw data into GEXF (Graph Exchange XML Format) format (e.g. for Gephi).
     
@@ -1859,6 +1863,8 @@ def buildExcel(data: list, columnNames: list[str], sheetNameIndex: int = 0) -> s
         return f.read()
 
 
+# 5 in sfwebui.py
+# 4 in test/unit/test_spiderfootwebui.py
 def cleanUserInput(inputList: list[str]) -> list[str]:
     """Convert data to HTML entities; except quotes and ampersands.
     

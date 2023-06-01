@@ -69,7 +69,7 @@ class SpiderFootSqliteLogHandler(logging.Handler):
         self.dbh = SpiderFootDb(self.opts)
 
 
-def logListenerSetup(loggingQueue: queue.Queue[logging.LogRecord], opts: dict | None = None) -> logging.handlers.QueueListener:
+def logListenerSetup(loggingQueue: queue.Queue[logging.LogRecord], opts: dict[str, ...] | None = None) -> logging.handlers.QueueListener:
     """Create and start a SpiderFoot log listener in its own thread.
 
     This function should be called as soon as possible in the main
