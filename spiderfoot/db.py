@@ -325,7 +325,7 @@ class SpiderFootDb:
     #  1 in spiderfoot/db.py
     #  1 in spiderfoot/logger.py
     #  1 in spiderfoot/plugin.py
-    def __init__(self, opts: dict[typing.Literal["__database"], str], init: bool = False) -> None:
+    def __init__(self, opts: dict[typing.Literal["__database"], str], *, init: bool = False) -> None:
         """Initialize database and create handle to the SQLite database file.
         Creates the database file if it does not exist.
         Creates database schema if it does not exist.
