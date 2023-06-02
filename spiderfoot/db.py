@@ -508,10 +508,11 @@ class SpiderFootDb:
 
             try:
                 with self._sync_session_factory.begin() as ctx:
-                    return list(ctx.execute(stmt, qvars).fetchall())
-            except sqlite3.Error as e:
+                    return list(ctx.scalars(stmt, qvars).all())
+            except sqlalchemy.exc.DBAPIError as e:
                 raise IOError("SQL error encountered when fetching search results") from e
 
+    # TODO Update call sites
     # 3 in sfwebui.py
     # 2 in sf.py
     # 2 in test/unit/test_modules.py
@@ -527,13 +528,11 @@ class SpiderFootDb:
         Raises:
             IOError: database I/O failed
         """
-
-        qry = "SELECT event_descr, event, event_raw, event_type FROM tbl_event_types"
+        stmt = sqlalchemy.select(TblEventType)
         with self._sync_session_factory.begin() as ctx:
             try:
-                result = ctx.execute(sqlalchemy.text(qry)).scalars().all()
-                return result
-            except sqlite3.Error as e:
+                return ctx.scalars(stmt).all()
+            except sqlalchemy.exc.DatabaseError as e:
                 raise IOError("SQL error encountered when retrieving event types") from e
 
     # 2 in spiderfoot/logger.py
