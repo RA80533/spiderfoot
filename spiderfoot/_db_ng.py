@@ -9,7 +9,7 @@ import sqlalchemy.exc
 import sqlalchemy.ext.asyncio
 import sqlalchemy.orm
 
-from .db import eventDetails
+from .db import _eventDetails
 from ._db_schema import TblConfig, TblScanCorrelationResult
 from ._db_schema import TblEventType
 from ._db_schema import TblScanInstance
@@ -42,7 +42,7 @@ class SpiderFootDb:
             self.create()
     
     def create(self) -> None:
-        tbl_event_type_iter = itertools.starmap(TblEventType, eventDetails)
+        tbl_event_type_iter = itertools.starmap(TblEventType, _eventDetails)
         
         try:
             with self._session_factory().sync_session as ctx, ctx.begin():
