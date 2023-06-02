@@ -80,3 +80,7 @@ class TestSpiderFootDb:
         
         @pytest.mark.skip("TODO")
         def test_filterFp_defaults_to_False(self): ...
+        
+        # TODO Patch sqlalchemy to raise an exception
+        @pytest.mark.skip("TODO")
+        def test_raises_IOError_on_sqlalchemy_exc_DatabaseError(self): ...
