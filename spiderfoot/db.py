@@ -21,6 +21,7 @@ import sqlite3
 import threading
 import time
 import typing
+import warnings
 from pathlib import Path
 
 import dacite
@@ -437,7 +438,7 @@ class SpiderFootDb:
     # 4 in test/unit/spiderfoot/test_spiderfootdb.py
     # 1 in sfwebui.py
     # 1 in spiderfoot/db.py
-    def search(self, criteria: dict, filterFp: bool = False) -> list:
+    def search(self, criteria: dict[str, str], filterFp: bool = False) -> list:
         """Search database.
 
         Args:
@@ -461,13 +462,7 @@ class SpiderFootDb:
 
         for key in list(criteria.keys()):
             if key not in valid_criteria:
-                criteria.pop(key, None)
-                continue
-
-            if not isinstance(criteria.get(key), str):
-                raise TypeError(f"criteria[{key}] is {type(criteria.get(key))}; expected str()") from None
-
-            if not criteria[key]:
+                warnings.warn(f"Found invalid search criteria: {key}")
                 criteria.pop(key, None)
                 continue
 
@@ -477,7 +472,7 @@ class SpiderFootDb:
         if len(criteria) == 1:
             raise ValueError("Only one search criteria provided; expected at least two")
 
-        qvars = list()
+        qvars = dict[str, str]()
         qry = "SELECT ROUND(c.generated) AS generated, c.data, \
             s.data as 'source_data', \
             c.module, c.type, c.confidence, c.visibility, c.risk, c.hash, \
@@ -490,30 +485,30 @@ class SpiderFootDb:
         if filterFp:
             qry += " AND c.false_positive <> 1 "
 
-        if criteria.get('scan_id') is not None:
-            qry += "AND c.scan_instance_id = ? "
-            qvars.append(criteria['scan_id'])
+        if "scan_id" in criteria:
+            qry += "AND c.scan_instance_id = :scan_id "
+            qvars["scan_id"] = criteria["scan_id"]
 
-        if criteria.get('type') is not None:
-            qry += " AND c.type = ? "
-            qvars.append(criteria['type'])
+        if "type" in criteria:
+            qry += " AND c.type = :type "
+            qvars["type"] = criteria["type"]
 
-        if criteria.get('value') is not None:
-            qry += " AND (c.data LIKE ? OR s.data LIKE ?) "
-            qvars.append(criteria['value'])
-            qvars.append(criteria['value'])
+        if "value" in criteria:
+            qry += " AND (c.data LIKE :value OR s.data LIKE :value) "
+            qvars["value"] = criteria["value"]
 
-        if criteria.get('regex') is not None:
-            qry += " AND (c.data REGEXP ? OR s.data REGEXP ?) "
-            qvars.append(criteria['regex'])
-            qvars.append(criteria['regex'])
+        if "regex" in criteria:
+            qry += " AND (c.data REGEXP :regex OR s.data REGEXP :regex) "
+            qvars["regex"] = criteria["regex"]
 
         qry += " ORDER BY c.data"
 
         with self._lock:
+            stmt = sqlalchemy.text(qry)
+
             try:
-                self._cursor.execute(qry, qvars)
-                return self._cursor.fetchall()
+                with self._sync_session_factory.begin() as ctx:
+                    return list(ctx.execute(stmt, qvars).fetchall())
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching search results") from e
 
