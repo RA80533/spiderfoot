@@ -36,7 +36,7 @@ from .event import SpiderFootEvent
 
 # 3 in spiderfoot/db.py
 # Queries for creating the SpiderFoot database
-createSchemaQueries = [
+_createSchemaQueries = [
     "PRAGMA journal_mode=WAL",
     "CREATE TABLE tbl_event_types ( \
         event       VARCHAR NOT NULL PRIMARY KEY, \
