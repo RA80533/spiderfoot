@@ -114,7 +114,7 @@ _EventType = typing.Literal["DATA", "DESCRIPTOR", "ENTITY", "INTERNAL", "SUBENTI
 
 
 # 1 in spiderfoot/db.py
-eventDetails: list[tuple[str, str, typing.Literal[0, 1], _EventType]] = [
+_eventDetails: list[tuple[str, str, typing.Literal[0, 1], _EventType]] = [
     ('ROOT', 'Internal SpiderFoot Root event', 1, 'INTERNAL'),
     ('ACCOUNT_EXTERNAL_OWNED', 'Account on External Site', 0, 'ENTITY'),
     ('ACCOUNT_EXTERNAL_OWNED_COMPROMISED', 'Hacked Account on External Site', 0, 'DESCRIPTOR'),
@@ -414,7 +414,7 @@ class SpiderFootDb:
         Raises:
             IOError: database I/O failed
         """
-        tbl_event_type_iter = itertools.starmap(TblEventType, eventDetails)
+        tbl_event_type_iter = itertools.starmap(TblEventType, _eventDetails)
 
         with self._lock:
             try:
