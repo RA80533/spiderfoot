@@ -13,23 +13,26 @@
 from __future__ import annotations
 
 import dataclasses
-import hashlib
 import itertools
-import random
-import re
 import sqlite3
-import threading
-import time
 import typing
 import warnings
-from pathlib import Path
+from time import time
 
 import dacite
 import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.orm
+from sqlalchemy.orm import sessionmaker
 
+from .db_schema import TblConfig
 from .db_schema import TblEventType
+from .db_schema import TblScanConfig
+from .db_schema import TblScanCorrelationResult
+from .db_schema import TblScanCorrelationResultEvent
+from .db_schema import TblScanInstance
+from .db_schema import TblScanLog
+from .db_schema import TblScanResult
 from .db_schema import orm_registry
 from .event import SpiderFootEvent
 
@@ -38,67 +41,6 @@ from .event import SpiderFootEvent
 # Queries for creating the SpiderFoot database
 _createSchemaQueries = [
     "PRAGMA journal_mode=WAL",
-    "CREATE TABLE tbl_event_types ( \
-        event       VARCHAR NOT NULL PRIMARY KEY, \
-        event_descr VARCHAR NOT NULL, \
-        event_raw   INT NOT NULL DEFAULT 0, \
-        event_type  VARCHAR NOT NULL \
-    )",
-    "CREATE TABLE tbl_config ( \
-        scope   VARCHAR NOT NULL, \
-        opt     VARCHAR NOT NULL, \
-        val     VARCHAR NOT NULL, \
-        PRIMARY KEY (scope, opt) \
-    )",
-    "CREATE TABLE tbl_scan_instances ( \
-        guid        VARCHAR NOT NULL PRIMARY KEY, \
-        name        VARCHAR NOT NULL, \
-        seed_target VARCHAR NOT NULL, \
-        created     INT DEFAULT 0, \
-        started     INT DEFAULT 0, \
-        ended       INT DEFAULT 0, \
-        status      VARCHAR NOT NULL \
-    )",
-    "CREATE TABLE tbl_scan_log ( \
-        scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
-        generated           INT NOT NULL, \
-        component           VARCHAR, \
-        type                VARCHAR NOT NULL, \
-        message             VARCHAR \
-    )",
-    "CREATE TABLE tbl_scan_config ( \
-        scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
-        component           VARCHAR NOT NULL, \
-        opt                 VARCHAR NOT NULL, \
-        val                 VARCHAR NOT NULL \
-    )",
-    "CREATE TABLE tbl_scan_results ( \
-        scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
-        hash                VARCHAR NOT NULL, \
-        type                VARCHAR NOT NULL REFERENCES tbl_event_types(event), \
-        generated           INT NOT NULL, \
-        confidence          INT NOT NULL DEFAULT 100, \
-        visibility          INT NOT NULL DEFAULT 100, \
-        risk                INT NOT NULL DEFAULT 0, \
-        module              VARCHAR NOT NULL, \
-        data                VARCHAR, \
-        false_positive      INT NOT NULL DEFAULT 0, \
-        source_event_hash  VARCHAR DEFAULT 'ROOT' \
-    )",
-    "CREATE TABLE tbl_scan_correlation_results ( \
-        id                  VARCHAR NOT NULL PRIMARY KEY, \
-        scan_instance_id    VARCHAR NOT NULL REFERENCES tbl_scan_instances(guid), \
-        title               VARCHAR NOT NULL, \
-        rule_risk           VARCHAR NOT NULL, \
-        rule_id             VARCHAR NOT NULL, \
-        rule_name           VARCHAR NOT NULL, \
-        rule_descr          VARCHAR NOT NULL, \
-        rule_logic          VARCHAR NOT NULL \
-    )",
-    "CREATE TABLE tbl_scan_correlation_results_events ( \
-        correlation_id      VARCHAR NOT NULL REFERENCES tbl_scan_correlation_results(id), \
-        event_hash          VARCHAR NOT NULL REFERENCES tbl_scan_results(hash) \
-    )",
     "CREATE INDEX idx_scan_results_id ON tbl_scan_results (scan_instance_id)",
     "CREATE INDEX idx_scan_results_type ON tbl_scan_results (scan_instance_id, type)",
     "CREATE INDEX idx_scan_results_hash ON tbl_scan_results (scan_instance_id, hash)",
@@ -303,137 +245,40 @@ _eventDetails: list[tuple[str, str, typing.Literal[0, 1], _EventType]] = [
 #  2 in spiderfoot/logger.py
 #  1 in spiderfoot/__init__.py
 class SpiderFootDb:
-    # 57 in spiderfoot/db.py
-    _cursor: sqlite3.Cursor
-    # 19 in spiderfoot/db.py
-    _conn: sqlite3.Connection
-
-    # 33 in spiderfoot/db.py
-    # Prevent multithread access to sqlite database
-    _lock: threading.RLock
-
     _sync_engine: sqlalchemy.Engine
-    _sync_session_factory: sqlalchemy.orm.sessionmaker[sqlalchemy.orm.Session]
+    _sync_session_factory: sessionmaker[sqlalchemy.orm.Session]
 
-    # 44 in test/unit/spiderfoot/test_spiderfootdb.py
-    # 35 in sfwebui.py
-    #  5 in test/unit/spiderfoot/test_spiderfootplugin.py
-    #  4 in test/unit/spiderfoot/test_spiderfootcorrelator.py
-    #  3 in sf.py
-    #  2 in test/unit/test_modules.py
-    #  1 in sfscan.py
-    #  1 in spiderfoot/db.py
-    #  1 in spiderfoot/logger.py
-    #  1 in spiderfoot/plugin.py
-    def __init__(self, opts: dict[typing.Literal["__database"], str], *, init: bool = False) -> None:
-        """Initialize database and create handle to the SQLite database file.
-        Creates the database file if it does not exist.
-        Creates database schema if it does not exist.
-
-        Args:
-            opts (dict): must specify the database file path in the '__database' key
-            init (bool): initialise the database schema.
-                         if the database file does not exist this option will be ignored.
-
-        Raises:
-            ValueError: arg value was invalid
-            IOError: database I/O failed
-        """
-
-        database_path = opts['__database']
-
+    def __init__(
+        self,
+        opts: dict[typing.Literal["__database"], str],
+        *,
+        init: bool = False,
+    ) -> None:
         self._sync_engine = sqlalchemy.create_engine(
             f"sqlite+pysqlite://{'/:memory:'}",
             echo=True,
         )
-        self._sync_session_factory = sqlalchemy.orm.sessionmaker(
+        self._sync_session_factory = sessionmaker(
             self._sync_engine,
             expire_on_commit=False,
         )
-
-        if (TODO_create_if_no_exist := False):
-            # create database directory
-            Path(database_path).parent.mkdir(exist_ok=True, parents=True)
-
-        # connect() will create the database file if it doesn't exist, but
-        # at least we can use this opportunity to ensure we have permissions to
-        # read and write to such a file.
-        try:
-            if (TODO_use_given_path := False):
-                self._conn = sqlite3.connect(database_path)
-            else:
-                self._conn = sqlite3.connect(f"file:{':memory:'}")
-        except Exception as e:
-            raise IOError(f"Error connecting to internal database {database_path}") from e
-
-        self._cursor = self._conn.cursor()
-
-        def __dbregex__(qry: str, data: str) -> bool:
-            """SQLite doesn't support regex queries, so we create
-            a custom function to do so.
-
-            Args:
-                qry (str): TBD
-                data (str): TBD
-
-            Returns:
-                bool: matches
-            """
-
-            try:
-                rx = re.compile(qry, re.IGNORECASE | re.DOTALL)
-                ret = rx.match(data)
-            except Exception:
-                return False
-            return ret is not None
-
-        self._lock = threading.RLock()
-
         if init:
-            # Now we actually check to ensure the database file has the schema set
-            # up correctly.
-            with self._lock:
-                try:
-                    self._cursor.execute('SELECT COUNT(*) FROM tbl_scan_config')
-                    self._conn.create_function("REGEXP", 2, __dbregex__)
-                except sqlite3.Error:
-                    try:
-                        self.create()
-                    except Exception as e:
-                        raise IOError("Tried to set up the SpiderFoot database schema, but failed") from e
+            self.create()
 
-    #
-    # Back-end database operations
-    #
-
-    # 2 in spiderfoot/db.py
-    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def create(self) -> None:
-        """Create the database schema.
-
-        Raises:
-            IOError: database I/O failed
-        """
         tbl_event_type_iter = itertools.starmap(TblEventType, _eventDetails)
+        try:
+            with self._sync_engine.begin() as ctx:
+                orm_registry.metadata.create_all(ctx)
+            with self._sync_session_factory.begin() as ctx:
+                ctx.add_all(tbl_event_type_iter)
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError(
+                "SQL error encountered when setting up database",
+            ) from e
 
-        with self._lock:
-            try:
-                with self._sync_engine.begin() as ctx:
-                    orm_registry.metadata.create_all(ctx)
-
-                with self._sync_session_factory.begin() as ctx:
-                    ctx.add_all(tbl_event_type_iter)
-            except sqlalchemy.exc.DBAPIError as e:
-                raise IOError("SQL error encountered when setting up database") from e
-
-    # 1 in sfscan.py
-    # 1 in spiderfoot/db.py
-    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def close(self) -> None:
-        """Close the database handle."""
-
-        with self._lock:
-            self._cursor.close()
+        self._sync_engine.dispose()
 
     # 4 in test/unit/spiderfoot/test_spiderfootdb.py
     # 1 in sfwebui.py
@@ -512,307 +357,263 @@ class SpiderFootDb:
             except sqlalchemy.exc.DBAPIError as e:
                 raise IOError("SQL error encountered when fetching search results") from e
 
-    # TODO Update call sites
-    # 3 in sfwebui.py
-    # 2 in sf.py
-    # 2 in test/unit/test_modules.py
-    # 1 in spiderfoot/correlation.py
-    # 1 in spiderfoot/db.py
-    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def eventTypes(self) -> typing.Sequence[TblEventType]:
-        """Get event types.
-
-        Returns:
-            list: event types
-
-        Raises:
-            IOError: database I/O failed
-        """
         stmt = sqlalchemy.select(TblEventType)
-        with self._sync_session_factory.begin() as ctx:
-            try:
-                return ctx.scalars(stmt).all()
-            except sqlalchemy.exc.DatabaseError as e:
-                raise IOError("SQL error encountered when retrieving event types") from e
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                tbl_event_type_iter_raw = ctx.scalars(stmt)
+        except sqlalchemy.exc.DatabaseError as e:
+            raise IOError(
+                "SQL error encountered when retrieving event types",
+            ) from e
+        tbl_event_type_iter = tbl_event_type_iter_raw.all()
+        return tbl_event_type_iter
 
-    # 2 in spiderfoot/logger.py
-    # 1 in spiderfoot/db.py
-    def scanLogEvents(self, batch: list) -> bool:
-        """Logs a batch of events to the database.
-
-        Args:
-            batch (list): tuples containing: instanceId, classification, message, component, logTime
-
-        Raises:
-            TypeError: arg type was invalid
-            IOError: database I/O failed
-
-        Returns:
-            bool: Whether the logging operation succeeded
-        """
-
-        inserts = []
-
+    def scanLogEvents(
+        self,
+        batch: list[tuple[str, str, str, str | None, float]],
+    ) -> None:
+        tbl_scan_log_iter = list[TblScanLog]()
         for instanceId, classification, message, component, logTime in batch:
-            if not isinstance(instanceId, str):
-                raise TypeError(f"instanceId is {type(instanceId)}; expected str()") from None
+            tbl_scan_log = TblScanLog(
+                scan_instance_id=instanceId,
+                generated=int(logTime * 1_000),
+                component=component,
+                type=classification,
+                message=message,
+            )
+            tbl_scan_log_iter.append(tbl_scan_log)
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                ctx.add_all(tbl_scan_log_iter)
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError("Unable to log scan event in database") from e
 
-            if not isinstance(classification, str):
-                raise TypeError(f"classification is {type(classification)}; expected str()") from None
+    def scanLogEvent(
+        self,
+        instanceId: str,
+        classification: str,
+        message: str,
+        component: str | None = None,
+    ) -> None:
+        tbl_scan_log = TblScanLog(
+            scan_instance_id=instanceId,
+            generated=int(time() * 1_000),
+            component=component,
+            type=classification,
+            message=message,
+        )
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                ctx.add(tbl_scan_log)
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError("Unable to log scan event in database") from e
 
-            if not isinstance(message, str):
-                raise TypeError(f"message is {type(message)}; expected str()") from None
+    def scanInstanceCreate(
+        self,
+        instanceId: str,
+        scanName: str,
+        scanTarget: str,
+    ) -> None:
+        tbl_scan_instance = TblScanInstance(
+            guid=instanceId,
+            name=scanName,
+            seed_target=scanTarget,
+        )
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                ctx.add(tbl_scan_instance)
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError("Unable to create scan instance in database") from e
 
-            if not component:
-                component = "SpiderFoot"
-
-            inserts.append((instanceId, logTime * 1000, component, classification, message))
-
-        if inserts:
-            qry = "INSERT INTO tbl_scan_log \
-                (scan_instance_id, generated, component, type, message) \
-                VALUES (?, ?, ?, ?, ?)"
-
-            with self._lock:
-                try:
-                    self._cursor.executemany(qry, inserts)
-                    self._conn.commit()
-                except sqlite3.Error as e:
-                    if "locked" not in e.args[0] and "thread" not in e.args[0]:
-                        raise IOError("Unable to log scan event in database") from e
-                    return False
-        return True
-
-    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
-    def scanLogEvent(self, instanceId: str, classification: str, message: str, component: str = None) -> None:
-        """Log an event to the database.
-
-        Args:
-            instanceId (str): scan instance ID
-            classification (str): TBD
-            message (str): TBD
-            component (str): TBD
-
-        Raises:
-            IOError: database I/O failed
-
-        Todo:
-            Do something smarter to handle database locks
-        """
-
-        if not component:
-            component = "SpiderFoot"
-
-        qry = "INSERT INTO tbl_scan_log \
-            (scan_instance_id, generated, component, type, message) \
-            VALUES (?, ?, ?, ?, ?)"
-
-        with self._lock:
-            try:
-                self._cursor.execute(qry, (
-                    instanceId, time.time() * 1000, component, classification, message
-                ))
-                self._conn.commit()
-            except sqlite3.Error as e:
-                if "locked" not in e.args[0] and "thread" not in e.args[0]:
-                    raise IOError("Unable to log scan event in database") from e
-                # print("[warning] Couldn't log due to SQLite limitations. You can probably ignore this.")
-                # log.critical(f"Unable to log event in DB due to lock: {e.args[0]}")
-                pass
-
-    # 5 in test/unit/spiderfoot/test_spiderfootdb.py
-    # 1 in sfscan.py
-    # 1 in spiderfoot/db.py
-    def scanInstanceCreate(self, instanceId: str, scanName: str, scanTarget: str) -> None:
-        """Store a scan instance in the database.
-
-        Args:
-            instanceId (str): scan instance ID
-            scanName(str): scan name
-            scanTarget (str): scan target
-
-        Raises:
-            IOError: database I/O failed
-        """
-
-        qry = "INSERT INTO tbl_scan_instances \
-            (guid, name, seed_target, created, status) \
-            VALUES (?, ?, ?, ?, ?)"
-
-        with self._lock:
-            try:
-                self._cursor.execute(qry, (
-                    instanceId, scanName, scanTarget, time.time() * 1000, 'CREATED'
-                ))
-                self._conn.commit()
-            except sqlite3.Error as e:
-                raise IOError("Unable to create scan instance in database") from e
-
-    # 1 in sf.py
-    # 1 in sfscan.py
-    # 1 in sfwebui.py
-    # 1 in spiderfoot/db.py
-    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
-    def scanInstanceSet(self, instanceId: str, started: str | None = None, ended: str | None = None, status: str | None = None) -> None:
-        """Update the start time, end time or status (or all 3) of a scan instance.
-
-        Args:
-            instanceId (str): scan instance ID
-            started (str): scan start time
-            ended (str): scan end time
-            status (str): scan status
-
-        Raises:
-            IOError: database I/O failed
-        """
-
-        qvars = list()
-        qry = "UPDATE tbl_scan_instances SET "
-
+    def scanInstanceSet(
+        self,
+        instanceId: str,
+        started: str | None = None,
+        ended: str | None = None,
+        status: str | None = None,
+    ) -> None:
+        stmt = (
+            sqlalchemy
+                .update(TblScanInstance)
+                .where(TblScanInstance.guid == instanceId)
+        )
         if started is not None:
-            qry += " started = ?,"
-            qvars.append(started)
-
+            stmt = stmt.values({TblScanInstance.started: started})
         if ended is not None:
-            qry += " ended = ?,"
-            qvars.append(ended)
-
+            stmt = stmt.values({TblScanInstance.ended: ended})
         if status is not None:
-            qry += " status = ?,"
-            qvars.append(status)
+            stmt = stmt.values({TblScanInstance.status: status})
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                ctx.execute(stmt)
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError(
+                "Unable to set information for the scan instance",
+            ) from e
 
-        # guid = guid is a little hack to avoid messing with , placement above
-        qry += " guid = guid WHERE guid = ?"
-        qvars.append(instanceId)
+    def scanInstanceGet(self, instanceId: str) -> TblScanInstance:
+        stmt = (
+            sqlalchemy
+                .select(TblScanInstance)
+                .where(TblScanInstance.guid == instanceId)
+        )
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                return ctx.execute(stmt).scalar_one()
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError(
+                "SQL error encountered when retrieving scan instance",
+            ) from e
 
-        with self._lock:
-            try:
-                self._cursor.execute(qry, qvars)
-                self._conn.commit()
-            except sqlite3.Error:
-                raise IOError("Unable to set information for the scan instance.") from None
-
-    # 18 in sfwebui.py
-    #  2 in sfscan.py
-    #  1 in sf.py
-    #  1 in spiderfoot/correlation.py
-    #  1 in spiderfoot/db.py
-    #  1 in spiderfoot/plugin.py
-    #  1 in test/unit/spiderfoot/test_spiderfootdb.py
-    def scanInstanceGet(self, instanceId: str) -> list:
-        """Return info about a scan instance (name, target, created, started, ended, status)
-
-        Args:
-            instanceId (str): scan instance ID
-
-        Returns:
-            list: scan instance info
-
-        Raises:
-            IOError: database I/O failed
-        """
-
-        qry = "SELECT name, seed_target, ROUND(created/1000) AS created, \
-            ROUND(started/1000) AS started, ROUND(ended/1000) AS ended, status \
-            FROM tbl_scan_instances WHERE guid = ?"
-        qvars = [instanceId]
-
-        with self._lock:
-            try:
-                self._cursor.execute(qry, qvars)
-                return self._cursor.fetchone()
-            except sqlite3.Error as e:
-                raise IOError("SQL error encountered when retrieving scan instance") from e
-
-    # 3 in test/unit/spiderfoot/test_spiderfootdb.py
-    # 2 in sfwebui.py
-    # 1 in spiderfoot/db.py
-    def scanResultSummary(self, instanceId: str, by: str = "type") -> list:
-        """Obtain a summary of the results, filtered by event type, module or entity.
-
-        Args:
-            instanceId (str): scan instance ID
-            by (str): filter by type
-
-        Returns:
-            list: scan instance info
-
-        Raises:
-            ValueError: arg value was invalid
-            IOError: database I/O failed
-        """
-
-        if by not in ["type", "module", "entity"]:
-            raise ValueError(f"Invalid filter by value: {by}") from None
-
+    # XXX Revisit
+    def scanResultSummary(
+        self,
+        instanceId: str,
+        by: typing.Literal["type", "module", "entity"] = "type",
+    ):
+        stmt = None
         if by == "type":
-            qry = "SELECT r.type, e.event_descr, MAX(ROUND(generated)) AS last_in, \
-                count(*) AS total, count(DISTINCT r.data) as utotal FROM \
-                tbl_scan_results r, tbl_event_types e WHERE e.event = r.type \
-                AND r.scan_instance_id = ? GROUP BY r.type ORDER BY e.event_descr"
-
+            stmt = self._compose_scanResultSummary_by_type_stmt(instanceId)
         if by == "module":
-            qry = "SELECT r.module, '', MAX(ROUND(generated)) AS last_in, \
-                count(*) AS total, count(DISTINCT r.data) as utotal FROM \
-                tbl_scan_results r, tbl_event_types e WHERE e.event = r.type \
-                AND r.scan_instance_id = ? GROUP BY r.module ORDER BY r.module DESC"
-
+            stmt = self._compose_scanResultSummary_by_module_stmt(instanceId)
         if by == "entity":
-            qry = "SELECT r.data, e.event_descr, MAX(ROUND(generated)) AS last_in, \
-                count(*) AS total, count(DISTINCT r.data) as utotal FROM \
-                tbl_scan_results r, tbl_event_types e WHERE e.event = r.type \
-                AND r.scan_instance_id = ? \
-                AND e.event_type in ('ENTITY') \
-                GROUP BY r.data, e.event_descr ORDER BY total DESC limit 50"
+            stmt = self._compose_scanResultSummary_by_entity_stmt(instanceId)
+        assert stmt is not None
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                return ctx.scalars(stmt).all()
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError(
+                "SQL error encountered when fetching result summary",
+            ) from e
 
-        qvars = [instanceId]
+    def _compose_scanResultSummary_by_type_stmt(self, instanceId: str):
+        stmt = (
+            sqlalchemy
+                .select(
+                    TblScanResult.type,
+                    TblEventType.event_descr,
+                    sqlalchemy.func.max(
+                        sqlalchemy.func.round(TblScanResult.generated),
+                    ).label("last_in"),
+                    sqlalchemy.func.count().label("total"),
+                    sqlalchemy.func.count(
+                        TblScanResult.data.distinct(),
+                    ).label("utotal"),
+                )
+                .where(TblScanResult.scan_instance_id == instanceId)
+                .join(
+                    TblEventType,
+                    TblEventType.event == TblScanResult.type,
+                )
+                .group_by(TblScanResult.type)
+                .order_by(TblEventType.event_descr)
+        )
+        return stmt
 
-        with self._lock:
-            try:
-                self._cursor.execute(qry, qvars)
-                return self._cursor.fetchall()
-            except sqlite3.Error as e:
-                raise IOError("SQL error encountered when fetching result summary") from e
+    def _compose_scanResultSummary_by_module_stmt(self, instanceId: str):
+        stmt = (
+            sqlalchemy
+                .select(
+                    TblScanResult.module,
+                    "",
+                    sqlalchemy.func.max(
+                        sqlalchemy.func.round(TblScanResult.generated),
+                    ).label("last_in"),
+                    sqlalchemy.func.count().label("total"),
+                    sqlalchemy.func.count(
+                        TblScanResult.data.distinct(),
+                    ).label("utotal"),
+                )
+                .where(TblScanResult.scan_instance_id == instanceId)
+                .join(
+                    TblEventType,
+                    TblEventType.event == TblScanResult.type,
+                )
+                .group_by(TblScanResult.module)
+                .order_by(TblScanResult.module.desc)
+        )
+        return stmt
 
-    # 2 in sfwebui.py
-    # 1 in spiderfoot/db.py
-    def scanCorrelationSummary(self, instanceId: str, by: str = "rule") -> list:
-        """Obtain a summary of the correlations, filtered by rule or risk
+    def _compose_scanResultSummary_by_entity_stmt(self, instanceId: str):
+        stmt = (
+            sqlalchemy
+                .select(
+                    TblScanResult.data,
+                    TblEventType.event_descr,
+                    sqlalchemy.func.max(
+                        sqlalchemy.func.round(TblScanResult.generated),
+                    ).label("last_in"),
+                    sqlalchemy.func.count().label("total"),
+                    sqlalchemy.func.count(
+                        TblScanResult.data.distinct(),
+                    ).label("utotal"),
+                )
+                .where(TblScanResult.scan_instance_id == instanceId)
+                .join(
+                    TblEventType,
+                    TblEventType.event == TblScanResult.type,
+                )
+                .group_by(
+                    TblScanResult.data,
+                    TblEventType.event_descr,
+                )
+                .order_by(sqlalchemy.column("total").desc)
+                .limit(50)
+        )
+        return stmt
 
-        Args:
-            instanceId (str): scan instance ID
-            by (str): filter by rule or risk
-
-        Returns:
-            list: scan correlation summary
-
-        Raises:
-            ValueError: arg value was invalid
-            IOError: database I/O failed
-        """
-
-        if by not in ["rule", "risk"]:
-            raise ValueError(f"Invalid filter by value: {by}") from None
-
-        if by == "risk":
-            qry = "SELECT rule_risk, count(*) AS total FROM \
-                tbl_scan_correlation_results \
-                WHERE scan_instance_id = ? GROUP BY rule_risk ORDER BY rule_id"
-
+    # XXX Revisit
+    def scanCorrelationSummary(
+        self,
+        instanceId: str,
+        by: typing.Literal["rule", "risk"] = "rule",
+    ):
+        stmt = None
         if by == "rule":
-            qry = "SELECT rule_id, rule_name, rule_risk, rule_descr, \
-                count(*) AS total FROM \
-                tbl_scan_correlation_results \
-                WHERE scan_instance_id = ? GROUP BY rule_id ORDER BY rule_id"
+            stmt = \
+                self._compose_scanCorrelationSummary_by_rule_stmt(instanceId)
+        if by == "risk":
+            stmt = \
+                self._compose_scanCorrelationSummary_by_risk_stmt(instanceId)
+        assert stmt is not None
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                return ctx.scalars(stmt).all()
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError(
+                "SQL error encountered when fetching correlation summary",
+            ) from e
 
-        qvars = [instanceId]
+    def _compose_scanCorrelationSummary_by_rule_stmt(self, instanceId: str):
+        stmt = (
+            sqlalchemy
+                .select(
+                    TblScanCorrelationResult.rule_id,
+                    TblScanCorrelationResult.rule_name,
+                    TblScanCorrelationResult.rule_risk,
+                    TblScanCorrelationResult.rule_descr,
+                    sqlalchemy.func.count().label("total"),
+                )
+                .where(TblScanCorrelationResult.scan_instance_id == instanceId)
+                .group_by(TblScanCorrelationResult.rule_id)
+                .order_by(TblScanCorrelationResult.rule_id)
+        )
+        return stmt
 
-        with self._lock:
-            try:
-                self._cursor.execute(qry, qvars)
-                return self._cursor.fetchall()
-            except sqlite3.Error as e:
-                raise IOError("SQL error encountered when fetching correlation summary") from e
+    def _compose_scanCorrelationSummary_by_risk_stmt(self, instanceId: str):
+        stmt = (
+            sqlalchemy
+                .select(
+                    TblScanCorrelationResult.rule_risk,
+                    sqlalchemy.func.count().label("total"),
+                )
+                .where(TblScanCorrelationResult.scan_instance_id == instanceId)
+                .group_by(TblScanCorrelationResult.rule_risk)
+                .order_by(TblScanCorrelationResult.rule_id)
+        )
+        return stmt
 
     # 2 in sfwebui.py
     # 1 in spiderfoot/db.py
@@ -1093,319 +894,143 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching scan errors") from e
 
-    # 1 in sfwebui.py
-    # 1 in spiderfoot/db.py
-    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
-    def scanInstanceDelete(self, instanceId: str) -> bool:
-        """Delete a scan instance.
+    def scanInstanceDelete(self, instanceId: str) -> None:
+        stmt = (
+            sqlalchemy
+                .delete(TblScanInstance)
+                .where(TblScanInstance.guid == instanceId)
+        )
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                ctx.execute(stmt)
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError("SQL error encountered when deleting scan") from e
 
-        Args:
-            instanceId (str): scan instance ID
+    def scanResultsUpdateFP(
+        self,
+        instanceId: str,
+        resultHashes: list[str],
+        fpFlag: int,
+    ) -> None:
+        stmt = (
+            sqlalchemy
+                .update(TblScanResult)
+                .values({TblScanResult.false_positive: fpFlag})
+                .where(
+                    TblScanResult.scan_instance_id == instanceId,
+                    TblScanResult.hash.in_(resultHashes),
+                )
+        )
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                ctx.execute(stmt)
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError(
+                "SQL error encountered when updating false-positive",
+            ) from e
 
-        Returns:
-            bool: success
+    def configSet(self, optMap: dict[str, str]) -> None:
+        tbl_config_iter = TblConfig.from_raw(optMap)
+        stmt = (
+            sqlalchemy
+                .update(TblConfig)
+                .values(tbl_config_iter)
+        )
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                ctx.execute(stmt)
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError(
+                "SQL error encountered when storing config, aborting",
+            ) from e
 
-        Raises:
-            IOError: database I/O failed
-        """
+    def configGet(self) -> dict[str, str]:
+        stmt = sqlalchemy.select(TblConfig)
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                tbl_config_iter_raw = ctx.scalars(stmt)
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError(
+                "SQL error encountered when fetching configuration",
+            ) from e
+        tbl_config_iter = tbl_config_iter_raw.all()
+        return TblConfig.from_tbl_iter(tbl_config_iter)
 
-        qry1 = "DELETE FROM tbl_scan_instances WHERE guid = ?"
-        qry2 = "DELETE FROM tbl_scan_config WHERE scan_instance_id = ?"
-        qry3 = "DELETE FROM tbl_scan_results WHERE scan_instance_id = ?"
-        qry4 = "DELETE FROM tbl_scan_log WHERE scan_instance_id = ?"
-        qvars = [instanceId]
-
-        with self._lock:
-            try:
-                self._cursor.execute(qry1, qvars)
-                self._cursor.execute(qry2, qvars)
-                self._cursor.execute(qry3, qvars)
-                self._cursor.execute(qry4, qvars)
-                self._conn.commit()
-            except sqlite3.Error as e:
-                raise IOError("SQL error encountered when deleting scan") from e
-
-        return True
-
-    # 1 in sfwebui.py
-    # 1 in spiderfoot/db.py
-    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
-    def scanResultsUpdateFP(self, instanceId: str, resultHashes: list, fpFlag: int) -> bool:
-        """Set the false positive flag for a result.
-
-        Args:
-            instanceId (str): scan instance ID
-            resultHashes (list): list of event hashes
-            fpFlag (int): false positive
-
-        Returns:
-            bool: success
-
-        Raises:
-            IOError: database I/O failed
-        """
-
-        with self._lock:
-            for resultHash in resultHashes:
-                qry = "UPDATE tbl_scan_results SET false_positive = ? WHERE \
-                    scan_instance_id = ? AND hash = ?"
-                qvars = [fpFlag, instanceId, resultHash]
-                try:
-                    self._cursor.execute(qry, qvars)
-                except sqlite3.Error as e:
-                    raise IOError("SQL error encountered when updating false-positive") from e
-
-            try:
-                self._conn.commit()
-            except sqlite3.Error as e:
-                raise IOError("SQL error encountered when updating false-positive") from e
-
-        return True
-
-    # 2 in sfwebui.py
-    # 2 in test/unit/spiderfoot/test_spiderfootdb.py
-    # 1 in spiderfoot/db.py
-    def configSet(self, optMap: dict = {}) -> bool:
-        """Store the default configuration in the database.
-
-        Args:
-            optMap (dict): config options
-
-        Returns:
-            bool: success
-
-        Raises:
-            ValueError: arg value was invalid
-            IOError: database I/O failed
-        """
-
-        if not optMap:
-            raise ValueError("optMap is empty") from None
-
-        qry = "REPLACE INTO tbl_config (scope, opt, val) VALUES (?, ?, ?)"
-
-        with self._lock:
-            for opt in list(optMap.keys()):
-                # Module option
-                if ":" in opt:
-                    parts = opt.split(':')
-                    qvals = [parts[0], parts[1], optMap[opt]]
-                else:
-                    # Global option
-                    qvals = ["GLOBAL", opt, optMap[opt]]
-
-                try:
-                    self._cursor.execute(qry, qvals)
-                except sqlite3.Error as e:
-                    raise IOError("SQL error encountered when storing config, aborting") from e
-
-            try:
-                self._conn.commit()
-            except sqlite3.Error as e:
-                raise IOError("SQL error encountered when storing config, aborting") from e
-
-        return True
-
-    # 4 in test/unit/spiderfoot/test_spiderfootdb.py
-    # 1 in sf.py
-    # 1 in sfwebui.py
-    # 1 in spiderfoot/db.py
-    def configGet(self) -> dict:
-        """Retreive the config from the database
-
-        Returns:
-            dict: config
-
-        Raises:
-            IOError: database I/O failed
-        """
-
-        qry = "SELECT scope, opt, val FROM tbl_config"
-
-        retval = dict()
-
-        with self._lock:
-            try:
-                self._cursor.execute(qry)
-                for [scope, opt, val] in self._cursor.fetchall():
-                    if scope == "GLOBAL":
-                        retval[opt] = val
-                    else:
-                        retval[f"{scope}:{opt}"] = val
-
-                return retval
-            except sqlite3.Error as e:
-                raise IOError("SQL error encountered when fetching configuration") from e
-
-    # 1 in sfwebui.py
-    # 1 in spiderfoot/db.py
-    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
     def configClear(self) -> None:
-        """Reset the config to default.
+        stmt = sqlalchemy.delete(TblConfig)
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                ctx.execute(stmt)
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError(
+                "Unable to clear configuration from the database",
+            ) from e
 
-        Clears the config from the database and lets the hard-coded settings in the code take effect.
+    def scanConfigSet(self, instanceId: str, optMap: dict[str, str]) -> None:
+        tbl_scan_config_iter = TblScanConfig.from_raw(
+            optMap,
+            scan_instance_id=instanceId,
+        )
+        stmt = (
+            sqlalchemy
+                .update(TblScanConfig)
+                .where(TblScanConfig.scan_instance_id == instanceId)
+                .values(tbl_scan_config_iter)
+        )
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                ctx.execute(stmt)
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError(
+                "SQL error encountered when storing config, aborting",
+            ) from e
 
-        Raises:
-            IOError: database I/O failed
-        """
+    def scanConfigGet(self, instanceId: str) -> dict[str, str]:
+        stmt = (
+            sqlalchemy
+                .select(TblScanConfig)
+                .where(TblScanConfig.scan_instance_id == instanceId)
+                .order_by(
+                    TblScanConfig.component,
+                    TblScanConfig.opt,
+                )
+        )
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                tbl_scan_config_iter_raw = ctx.scalars(stmt)
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError(
+                "SQL error encountered when fetching configuration",
+            ) from e
+        tbl_scan_config_iter = tbl_scan_config_iter_raw.all()
+        return TblScanConfig.from_tbl_iter(tbl_scan_config_iter)
 
-        qry = "DELETE from tbl_config"
-        with self._lock:
-            try:
-                self._cursor.execute(qry)
-                self._conn.commit()
-            except sqlite3.Error as e:
-                raise IOError("Unable to clear configuration from the database") from e
-
-    # 1 in sfwebui.py
-    # 1 in spiderfoot/db.py
-    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
-    def scanConfigSet(self, scan_id, optMap=dict()) -> None:
-        """Store a configuration value for a scan.
-
-        Args:
-            scan_id (int): scan instance ID
-            optMap (dict): config options
-
-        Raises:
-            TypeError: arg type was invalid
-            ValueError: arg value was invalid
-            IOError: database I/O failed
-        """
-
-        if not isinstance(optMap, dict):
-            raise TypeError(f"optMap is {type(optMap)}; expected dict()") from None
-        if not optMap:
-            raise ValueError("optMap is empty") from None
-
-        qry = "REPLACE INTO tbl_scan_config \
-                (scan_instance_id, component, opt, val) VALUES (?, ?, ?, ?)"
-
-        with self._lock:
-            for opt in list(optMap.keys()):
-                # Module option
-                if ":" in opt:
-                    parts = opt.split(':')
-                    qvals = [scan_id, parts[0], parts[1], optMap[opt]]
-                else:
-                    # Global option
-                    qvals = [scan_id, "GLOBAL", opt, optMap[opt]]
-
-                try:
-                    self._cursor.execute(qry, qvals)
-                except sqlite3.Error as e:
-                    raise IOError("SQL error encountered when storing config, aborting") from e
-
-            try:
-                self._conn.commit()
-            except sqlite3.Error as e:
-                raise IOError("SQL error encountered when storing config, aborting") from e
-
-    # 4 in sfwebui.py
-    # 1 in spiderfoot/db.py
-    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
-    def scanConfigGet(self, instanceId: str) -> dict:
-        """Retrieve configuration data for a scan component.
-
-        Args:
-            instanceId (str): scan instance ID
-
-        Returns:
-            dict: configuration data
-
-        Raises:
-            IOError: database I/O failed
-        """
-
-        qry = "SELECT component, opt, val FROM tbl_scan_config \
-                WHERE scan_instance_id = ? ORDER BY component, opt"
-        qvars = [instanceId]
-
-        retval = dict()
-
-        with self._lock:
-            try:
-                self._cursor.execute(qry, qvars)
-                for [component, opt, val] in self._cursor.fetchall():
-                    if component == "GLOBAL":
-                        retval[opt] = val
-                    else:
-                        retval[f"{component}:{opt}"] = val
-                return retval
-            except sqlite3.Error as e:
-                raise IOError("SQL error encountered when fetching configuration") from e
-
-    # 8 in test/unit/spiderfoot/test_spiderfootdb.py
-    # 2 in modules/sfp__stor_db.py
-    # 1 in spiderfoot/db.py
-    def scanEventStore(self, instanceId: str, sfEvent: SpiderFootEvent, truncateSize: int = 0) -> None:
-        """Store an event in the database.
-
-        Args:
-            instanceId (str): scan instance ID
-            sfEvent (SpiderFootEvent): event to be stored in the database
-            truncateSize (int): truncate size for event data
-
-        Raises:
-            TypeError: arg type was invalid
-            ValueError: arg value was invalid
-            IOError: database I/O failed
-        """
-        if not instanceId:
-            raise ValueError("instanceId is empty") from None
-
-        if not isinstance(sfEvent, SpiderFootEvent):
-            raise TypeError(f"sfEvent is {type(sfEvent)}; expected SpiderFootEvent()") from None
-
-        if not sfEvent.generated:
-            raise ValueError("sfEvent.generated is empty") from None
-
-        if not sfEvent.eventType:
-            raise ValueError("sfEvent.eventType is empty") from None
-
-        if not sfEvent.data:
-            raise ValueError("sfEvent.data is empty") from None
-
-        if not sfEvent.module and sfEvent.eventType != "ROOT":
-            raise ValueError("sfEvent.module is empty") from None
-
-        if not 0 <= sfEvent.confidence <= 100:
-            raise ValueError(f"sfEvent.confidence value is {type(sfEvent.confidence)}; expected 0 - 100") from None
-
-        if not 0 <= sfEvent.visibility <= 100:
-            raise ValueError(f"sfEvent.visibility value is {type(sfEvent.visibility)}; expected 0 - 100") from None
-
-        if not 0 <= sfEvent.risk <= 100:
-            raise ValueError(f"sfEvent.risk value is {type(sfEvent.risk)}; expected 0 - 100") from None
-
-        if not isinstance(sfEvent.sourceEvent, SpiderFootEvent) and sfEvent.eventType != "ROOT":
-            raise TypeError(f"sfEvent.sourceEvent is {type(sfEvent.sourceEvent)}; expected str()") from None
-
-        if not sfEvent.sourceEventHash:
-            raise ValueError("sfEvent.sourceEventHash is empty") from None
-
-        storeData = sfEvent.data
-
-        # truncate if required
-        if isinstance(truncateSize, int) and truncateSize > 0:
-            storeData = storeData[0:truncateSize]
-
-        # retrieve scan results
-        qry = "INSERT INTO tbl_scan_results \
-            (scan_instance_id, hash, type, generated, confidence, \
-            visibility, risk, module, data, source_event_hash) \
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-
-        qvals = [instanceId, sfEvent.hash, sfEvent.eventType, sfEvent.generated,
-                 sfEvent.confidence, sfEvent.visibility, sfEvent.risk,
-                 sfEvent.module, storeData, sfEvent.sourceEventHash]
-
-        with self._lock:
-            try:
-                self._cursor.execute(qry, qvals)
-                self._conn.commit()
-            except sqlite3.Error as e:
-                raise IOError(f"SQL error encountered when storing event data ({self._cursor})") from e
+    def scanEventStore(
+        self,
+        instanceId: str,
+        sfEvent: SpiderFootEvent,
+        truncateSize: int = 0,
+    ) -> None:
+        tbl_scan_result = TblScanResult(
+            scan_instance_id=instanceId,
+            hash=sfEvent.hash,
+            type=sfEvent.eventType,
+            generated=int(sfEvent.generated * 1_000),
+            confidence=sfEvent.confidence,
+            visibility=sfEvent.visibility,
+            risk=sfEvent.risk,
+            module=sfEvent.module,
+            data=sfEvent.data,
+            false_positive=0,
+            source_event_hash=sfEvent.sourceEventHash,
+        )
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                ctx.add(tbl_scan_result)
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError(
+                f"SQL error encountered when storing event data",
+            ) from e
 
     # 1 in sfwebui.py
     # 1 in spiderfoot/db.py
@@ -1554,9 +1179,7 @@ class SpiderFootDb:
 
         return results
 
-    # 3 in spiderfoot/db.py
-    # 1 in test/unit/spiderfoot/test_spiderfootdb.py
-    def scanElementChildrenDirect(self, instanceId: str, elementIdList: list) -> list:
+    def scanElementChildrenDirect(self, instanceId: str, elementIdList: list[str]) -> list:
         """Get the child IDs, types and data for a set of IDs.
 
         Args:
@@ -1569,26 +1192,55 @@ class SpiderFootDb:
         Raises:
             IOError: database I/O failed
         """
+        """
+        SELECT
+            ROUND("c"."generated") AS "generated",
+            "c"."data",
+            "s"."data" AS "source_data",
+            "c"."module",
+            "c"."type",
+            "c"."confidence",
+            "c"."visibility",
+            "c"."risk",
+            "c"."hash",
+            "c"."source_event_hash",
+            "t"."event_descr",
+            "t"."event_type",
+            "s"."scan_instance_id",
+            "c"."false_positive" AS "fp",
+            "s"."false_positive" AS "parent_fp"
+        FROM
+            tbl_scan_result "c",
+            tbl_scan_result "s",
+            tbl_event_type "t"
+        WHERE
+            "c"."scan_instance_id" = ?
+            AND "c"."source_event_hash" = "s"."hash"
+            AND "s"."scan_instance_id" = "c"."scan_instance_id"
+            AND "t"."event" = "c"."type"
+            AND "s"."hash" IN (?)
+        """
+        
+        
+        
+        # SELECT ROUND(c.generated) AS generated, c.data, \
+        # #     s.data as 'source_data', \
+        # #     c.module, c.type, c.confidence, c.visibility, c.risk, c.hash, \
+        # #     c.source_event_hash, t.event_descr, t.event_type, s.scan_instance_id, \
+        # #     c.false_positive as 'fp', s.false_positive as 'parent_fp' \
 
-        hashIds = []
-        for hashId in elementIdList:
-            if not hashId:
-                continue
-            if not hashId.isalnum():
-                continue
-            hashIds.append(hashId)
 
-        # the output of this needs to be aligned with scanResultEvent,
-        # as other functions call both expecting the same output.
-        qry = "SELECT ROUND(c.generated) AS generated, c.data, \
-            s.data as 'source_data', \
-            c.module, c.type, c.confidence, c.visibility, c.risk, c.hash, \
-            c.source_event_hash, t.event_descr, t.event_type, s.scan_instance_id, \
-            c.false_positive as 'fp', s.false_positive as 'parent_fp' \
-            FROM tbl_scan_results c, tbl_scan_results s, tbl_event_types t \
-            WHERE c.scan_instance_id = ? AND c.source_event_hash = s.hash AND \
-            s.scan_instance_id = c.scan_instance_id AND \
-            t.event = c.type AND s.hash in ('%s')" % "','".join(hashIds)
+        # # the output of this needs to be aligned with scanResultEvent,
+        # # as other functions call both expecting the same output.
+        # qry = "SELECT ROUND(c.generated) AS generated, c.data, \
+        #     s.data as 'source_data', \
+        #     c.module, c.type, c.confidence, c.visibility, c.risk, c.hash, \
+        #     c.source_event_hash, t.event_descr, t.event_type, s.scan_instance_id, \
+        #     c.false_positive as 'fp', s.false_positive as 'parent_fp' \
+        #     FROM tbl_scan_results c, tbl_scan_results s, tbl_event_types t \
+        #     WHERE c.scan_instance_id = ? AND c.source_event_hash = s.hash AND \
+        #     s.scan_instance_id = c.scan_instance_id AND \
+        #     t.event = c.type AND s.hash in ('%s')" % "','".join(hashIds)
         qvars = [instanceId]
 
         with self._lock:
@@ -1668,46 +1320,48 @@ class SpiderFootDb:
     # 1 in sfwebui.py
     # 1 in spiderfoot/db.py
     # 1 in test/unit/spiderfoot/test_spiderfootdb.py
-    def scanElementChildrenAll(self, instanceId: str, parentIds: list) -> list:
+    def scanElementChildrenAll(self, instanceId: str, parentIds: list[str]) -> list[str]:
         """Get the full set of downstream IDs which are children of the supplied set of IDs.
 
         Args:
             instanceId (str): scan instance ID
-            parentIds (list): TBD
+            parentIds (list[str]): TBD
 
         Returns:
-            list: TBD
+            list[str]: TBD
 
         Note: This function is not the same as the scanElementParent* functions.
               This function returns only ids.
         """
+        children_ids = list[str]()
 
-        datamap = list()
-        keepGoing = True
-        nextIds = list()
+        direct_children = self.scanElementChildrenDirect(instanceId, parentIds)
 
-        nextSet = self.scanElementChildrenDirect(instanceId, parentIds)
-        for row in nextSet:
-            datamap.append(row[8])
+        # datamap = list()
+        # keepGoing = True
+        # nextIds = list()
 
-        for row in nextSet:
-            if row[8] not in nextIds:
-                nextIds.append(row[8])
+        # nextSet = self.scanElementChildrenDirect(instanceId, parentIds)
+        # for row in nextSet:
+        #     datamap.append(row[8])
 
-        while keepGoing:
-            nextSet = self.scanElementChildrenDirect(instanceId, nextIds)
-            if nextSet is None or len(nextSet) == 0:
-                keepGoing = False
-                break
+        # for row in nextSet:
+        #     if row[8] not in nextIds:
+        #         nextIds.append(row[8])
 
-            for row in nextSet:
-                datamap.append(row[8])
-                nextIds = list()
-                nextIds.append(row[8])
+        # while keepGoing:
+        #     nextSet = self.scanElementChildrenDirect(instanceId, nextIds)
+        #     if nextSet is None or len(nextSet) == 0:
+        #         keepGoing = False
+        #         break
 
-        return datamap
+        #     for row in nextSet:
+        #         datamap.append(row[8])
+        #         nextIds = list()
+        #         nextIds.append(row[8])
 
-    # 1 in spiderfoot/correlation.py
+        # return datamap
+
     def correlationResultCreate(
         self,
         instanceId: str,
@@ -1717,55 +1371,54 @@ class SpiderFootDb:
         ruleRisk: str,
         ruleYaml: str,
         correlationTitle: str,
-        eventHashes: list
+        eventHashes: list[str],
     ) -> str:
-        """Create a correlation result in the database.
+        tbl_scan_correlation_result = TblScanCorrelationResult(
+            scan_instance_id=instanceId,
+            title=correlationTitle,
+            rule_risk=ruleRisk,
+            rule_id=ruleId,
+            rule_name=ruleName,
+            rule_descr=ruleDescr,
+            rule_logic=ruleYaml,
+        )
+        tbl_scan_correlation_result_event_iter = [
+            TblScanCorrelationResultEvent(
+                correlation_id=tbl_scan_correlation_result.id,
+                event_hash=eventHash,
+            )
+            for eventHash in eventHashes
+        ]
+        try:
+            with self._sync_session_factory.begin() as ctx:
+                ctx.add(tbl_scan_correlation_result)
+                ctx.add_all(tbl_scan_correlation_result_event_iter)
+        except sqlalchemy.exc.DBAPIError as e:
+            raise IOError(
+                "Unable to create correlation result in database",
+            ) from e
+        return tbl_scan_correlation_result.id
 
-        Args:
-            instanceId (str): scan instance ID
-            ruleId(str): correlation rule ID
-            ruleName(str): correlation rule name
-            ruleDescr(str): correlation rule description
-            ruleRisk(str): correlation rule risk level
-            ruleYaml(str): correlation rule raw YAML
-            correlationTitle(str): correlation title
-            eventHashes(list): events mapped to the correlation result
 
-        Raises:
-            IOError: database I/O failed
+# def _from_iter_TblConfig(tbl_config_iter: typing.Sequence[TblConfig]) -> dict[str, str]:
+#     config = dict[str, str]()
+#     for tbl_config in tbl_config_iter:
+#         key = (
+#             f"{tbl_config.scope}:{tbl_config.opt}"
+#             if tbl_config.scope != "GLOBAL"
+#             else tbl_config.opt
+#         )
+#         config[key] = tbl_config.val
+#     return config
 
-        Returns:
-            str: Correlation ID created
-        """
 
-        uniqueId = str(hashlib.md5(str(time.time() + random.SystemRandom().randint(0, 99999999)).encode('utf-8')).hexdigest())  # noqa: DUO130
-
-        qry = "INSERT INTO tbl_scan_correlation_results \
-            (id, scan_instance_id, title, rule_name, rule_descr, rule_risk, rule_id, rule_logic) \
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-
-        with self._lock:
-            try:
-                self._cursor.execute(qry, (
-                    uniqueId, instanceId, correlationTitle, ruleName, ruleDescr, ruleRisk, ruleId, ruleYaml
-                ))
-                self._conn.commit()
-            except sqlite3.Error as e:
-                raise IOError("Unable to create correlation result in database") from e
-
-        # Map events to the correlation result
-        qry = "INSERT INTO tbl_scan_correlation_results_events \
-            (correlation_id, event_hash) \
-            VALUES (?, ?)"
-
-        with self._lock:
-            for eventHash in eventHashes:
-                try:
-                    self._cursor.execute(qry, (
-                        uniqueId, eventHash
-                    ))
-                    self._conn.commit()
-                except sqlite3.Error as e:
-                    raise IOError("Unable to create correlation result in database") from e
-
-        return uniqueId
+def _to_iter_TblConfig(config: dict[str, str]) -> list[TblConfig]:
+    tbl_config_iter = list[TblConfig]()
+    for key, val in config.items():
+        if ":" in key:
+            scope, opt = key.split(":")
+        else:
+            scope, opt = "GLOBAL", key
+        tbl_config = TblConfig(scope, opt, val)
+        tbl_config_iter.append(tbl_config)
+    return tbl_config_iter

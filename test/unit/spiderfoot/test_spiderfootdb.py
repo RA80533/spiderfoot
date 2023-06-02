@@ -165,7 +165,7 @@ class TestSpiderFootDb(unittest.TestCase):
         """
         Test scanInstanceSet(self, instanceId, started=None, ended=None, status=None)
         """
-        sfdb = SpiderFootDb(self.default_options, False)
+        sfdb = SpiderFootDb(self.default_options, init=True)
 
         scan_instance = 'example scan instance'
         sfdb.scanInstanceSet(scan_instance, None, None, None)

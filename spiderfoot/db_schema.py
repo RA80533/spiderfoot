@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing
 import uuid
 from time import time
 
@@ -18,6 +19,33 @@ class TblConfig:
     scope: sqlalchemy.orm.Mapped[str] = mapped_column(primary_key=True)
     opt: sqlalchemy.orm.Mapped[str] = mapped_column(primary_key=True)
     val: sqlalchemy.orm.Mapped[str]
+    
+    @classmethod
+    def from_tbl_iter(
+        cls,
+        tbl_iter: typing.Sequence[TblConfig],
+    ) -> dict[str, str]:
+        raw_config = dict[str, str]()
+        for tbl_config in tbl_iter:
+            key = (
+                f"{tbl_config.scope}:{tbl_config.opt}"
+                if tbl_config.scope != "GLOBAL"
+                else tbl_config.opt
+            )
+            raw_config[key] = tbl_config.val
+        return raw_config
+    
+    @classmethod
+    def from_raw(cls, raw: dict[str, str]) -> typing.Sequence[TblConfig]:
+        tbl_config_iter = list[TblConfig]()
+        for key, val in raw.items():
+            if ":" in key:
+                scope, opt = key.split(":")
+            else:
+                scope, opt = "GLOBAL", key
+            tbl_config = TblConfig(scope, opt, val)
+            tbl_config_iter.append(tbl_config)
+        return tbl_config_iter
 
 
 # TODO Change "tbl_event_types" to "tbl_event_type"
@@ -58,6 +86,44 @@ class TblScanConfig:
     component: sqlalchemy.orm.Mapped[str]
     opt: sqlalchemy.orm.Mapped[str]
     val: sqlalchemy.orm.Mapped[str]
+    
+    
+    @classmethod
+    def from_tbl_iter(
+        cls,
+        tbl_iter: typing.Sequence[TblScanConfig],
+    ) -> dict[str, str]:
+        raw_scan_config = dict[str, str]()
+        for tbl_scan_config in tbl_iter:
+            key = (
+                f"{tbl_scan_config.component}:{tbl_scan_config.opt}"
+                if tbl_scan_config.component != "GLOBAL"
+                else tbl_scan_config.opt
+            )
+            raw_scan_config[key] = tbl_scan_config.val
+        return raw_scan_config
+    
+    @classmethod
+    def from_raw(
+        cls,
+        raw: dict[str, str],
+        *,
+        scan_instance_id: str,
+    ) -> typing.Sequence[TblScanConfig]:
+        tbl_scan_config_iter = list[TblScanConfig]()
+        for key, val in raw.items():
+            if ":" in key:
+                component, opt = key.split(":")
+            else:
+                component, opt = "GLOBAL", key
+            tbl_scan_config = TblScanConfig(
+                scan_instance_id,
+                component,
+                opt,
+                val,
+            )
+            tbl_scan_config_iter.append(tbl_scan_config)
+        return tbl_scan_config_iter
 
 
 # TODO Change "tbl_scan_correlation_results" to "tbl_scan_correlation_result"
