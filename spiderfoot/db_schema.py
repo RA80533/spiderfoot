@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import typing
 import uuid
-from time import time
 
 import sqlalchemy
 import sqlalchemy.orm
+from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 
 
@@ -16,9 +16,9 @@ orm_registry = sqlalchemy.orm.registry()
 class TblConfig:
     __tablename__ = "tbl_config"
     
-    scope: sqlalchemy.orm.Mapped[str] = mapped_column(primary_key=True)
-    opt: sqlalchemy.orm.Mapped[str] = mapped_column(primary_key=True)
-    val: sqlalchemy.orm.Mapped[str]
+    scope: Mapped[str] = mapped_column(primary_key=True)
+    opt: Mapped[str] = mapped_column(primary_key=True)
+    val: Mapped[str]
     
     @classmethod
     def from_tbl_iter(
@@ -54,12 +54,12 @@ class TblConfig:
 class TblEventType:
     __tablename__ = "tbl_event_types"
     
-    event: sqlalchemy.orm.Mapped[str] = mapped_column(primary_key=True)
-    event_descr: sqlalchemy.orm.Mapped[str]
-    event_raw: sqlalchemy.orm.Mapped[int] = mapped_column(
+    event: Mapped[str] = mapped_column(primary_key=True)
+    event_descr: Mapped[str]
+    event_raw: Mapped[int] = mapped_column(
         server_default=sqlalchemy.text("0"),  # DEFAULT 0
     )
-    event_type: sqlalchemy.orm.Mapped[str]
+    event_type: Mapped[str]
 
 
 _tbl_scan_config_rowid = 0
@@ -74,19 +74,18 @@ class TblScanConfig:
         _tbl_scan_config_rowid += 1
         return _tbl_scan_config_rowid
     
-    rowid: sqlalchemy.orm.Mapped[int] = mapped_column(
+    rowid: Mapped[int] = mapped_column(
         default_factory=autoincrement,
         kw_only=True,
         primary_key=True,
     )
     
-    scan_instance_id: sqlalchemy.orm.Mapped[str] = mapped_column(
+    scan_instance_id: Mapped[str] = mapped_column(
         sqlalchemy.ForeignKey("tbl_scan_instances.guid"),
     )
-    component: sqlalchemy.orm.Mapped[str]
-    opt: sqlalchemy.orm.Mapped[str]
-    val: sqlalchemy.orm.Mapped[str]
-    
+    component: Mapped[str]
+    opt: Mapped[str]
+    val: Mapped[str]
     
     @classmethod
     def from_tbl_iter(
@@ -131,20 +130,20 @@ class TblScanConfig:
 class TblScanCorrelationResult:
     __tablename__ = "tbl_scan_correlation_results"
     
-    id: sqlalchemy.orm.Mapped[str] = mapped_column(
-        default_factory=uuid.uuid4,
+    id: Mapped[str] = mapped_column(
+        default_factory=lambda: str(uuid.uuid4()),
         kw_only=True,
         primary_key=True,
     )
-    scan_instance_id: sqlalchemy.orm.Mapped[str] = mapped_column(
+    scan_instance_id: Mapped[str] = mapped_column(
         sqlalchemy.ForeignKey("tbl_scan_instances.guid"),
     )
-    title: sqlalchemy.orm.Mapped[str]
-    rule_risk: sqlalchemy.orm.Mapped[str]
-    rule_id: sqlalchemy.orm.Mapped[str]
-    rule_name: sqlalchemy.orm.Mapped[str]
-    rule_descr: sqlalchemy.orm.Mapped[str]
-    rule_logic: sqlalchemy.orm.Mapped[str]
+    title: Mapped[str]
+    rule_risk: Mapped[str]
+    rule_id: Mapped[str]
+    rule_name: Mapped[str]
+    rule_descr: Mapped[str]
+    rule_logic: Mapped[str]
 
 
 _tbl_scan_correlation_results_events_rowid = 0
@@ -160,16 +159,16 @@ class TblScanCorrelationResultEvent:
         _tbl_scan_correlation_results_events_rowid += 1
         return _tbl_scan_correlation_results_events_rowid
     
-    rowid: sqlalchemy.orm.Mapped[int] = mapped_column(
+    rowid: Mapped[int] = mapped_column(
         default_factory=autoincrement,
         kw_only=True,
         primary_key=True,
     )
     
-    correlation_id: sqlalchemy.orm.Mapped[str] = mapped_column(
+    correlation_id: Mapped[str] = mapped_column(
         sqlalchemy.ForeignKey("tbl_scan_correlation_results.id"),
     )
-    event_hash: sqlalchemy.orm.Mapped[str] = mapped_column(
+    event_hash: Mapped[str] = mapped_column(
         sqlalchemy.ForeignKey("tbl_scan_results.hash"),
     )
 
@@ -179,28 +178,29 @@ class TblScanCorrelationResultEvent:
 class TblScanInstance:
     __tablename__ = "tbl_scan_instances"
     
-    guid: sqlalchemy.orm.Mapped[str] = mapped_column(
-        default_factory=uuid.uuid4,
+    guid: Mapped[str] = mapped_column(
+        default_factory=lambda: str(uuid.uuid4()),
         kw_only=True,
         primary_key=True,
     )
-    name: sqlalchemy.orm.Mapped[str]
-    seed_target: sqlalchemy.orm.Mapped[str]
-    created: sqlalchemy.orm.Mapped[int | None] = mapped_column(
-        default_factory=lambda: int(time() * 1_000),
+    name: Mapped[str]
+    seed_target: Mapped[str]
+    created: Mapped[int | None] = mapped_column(
+        default=0,
         kw_only=True,
+        server_default=sqlalchemy.text("0"),  # DEFAULT 0
     )
-    started: sqlalchemy.orm.Mapped[int | None] = mapped_column(
-        default=None,
+    started: Mapped[int | None] = mapped_column(
+        default=0,
         kw_only=True,
+        server_default=sqlalchemy.text("0"),  # DEFAULT 0
     )
-    ended: sqlalchemy.orm.Mapped[int | None] = mapped_column(
-        default=None,
+    ended: Mapped[int | None] = mapped_column(
+        default=0,
         kw_only=True,
+        server_default=sqlalchemy.text("0"),  # DEFAULT 0
     )
-    status: sqlalchemy.orm.Mapped[str] = mapped_column(
-        default="CREATED",
-    )
+    status: Mapped[str]
 
 
 _tbl_scan_log_rowid = 0
@@ -215,29 +215,24 @@ class TblScanLog:
         _tbl_scan_log_rowid += 1
         return _tbl_scan_log_rowid
     
-    rowid: sqlalchemy.orm.Mapped[int] = mapped_column(
+    rowid: Mapped[int] = mapped_column(
         default_factory=autoincrement,
         kw_only=True,
         primary_key=True,
     )
     
-    scan_instance_id: sqlalchemy.orm.Mapped[str] = mapped_column(
+    scan_instance_id: Mapped[str] = mapped_column(
         sqlalchemy.ForeignKey("tbl_scan_instances.guid"),
     )
-    generated: sqlalchemy.orm.Mapped[int]
-    component: sqlalchemy.orm.Mapped[str | None]
-    type: sqlalchemy.orm.Mapped[str]
-    message: sqlalchemy.orm.Mapped[str | None]
+    generated: Mapped[int]
+    component: Mapped[str | None]
+    type: Mapped[str]
+    message: Mapped[str | None]
 
 
 _tbl_scan_results_rowid = 0
 
 # TODO Change "tbl_scan_results" to "tbl_scan_result"
-# TODO Fix `confidence` default
-# TODO Fix `visibility` default
-# TODO Fix `risk` default
-# TODO Fix `false_positive` default
-# TODO Fix `source_event_hash` default
 @orm_registry.mapped_as_dataclass
 class TblScanResult:
     __tablename__ = "tbl_scan_results"
@@ -248,34 +243,44 @@ class TblScanResult:
         _tbl_scan_results_rowid += 1
         return _tbl_scan_results_rowid
     
-    rowid: sqlalchemy.orm.Mapped[int] = mapped_column(
+    rowid: Mapped[int] = mapped_column(
         default_factory=autoincrement,
         kw_only=True,
         primary_key=True,
     )
     
-    scan_instance_id: sqlalchemy.orm.Mapped[str] = mapped_column(
+    scan_instance_id: Mapped[str] = mapped_column(
         sqlalchemy.ForeignKey("tbl_scan_instances.guid"),
     )
-    hash: sqlalchemy.orm.Mapped[str]
-    type: sqlalchemy.orm.Mapped[str] = mapped_column(
+    hash: Mapped[str]
+    type: Mapped[str] = mapped_column(
         sqlalchemy.ForeignKey("tbl_event_types.event"),
     )
-    generated: sqlalchemy.orm.Mapped[int]
-    confidence: sqlalchemy.orm.Mapped[int] = mapped_column(
+    generated: Mapped[int]
+    confidence: Mapped[int] = mapped_column(
+        default=100,
+        kw_only=True,
         server_default=sqlalchemy.text("100"),  # DEFAULT 100
     )
-    visibility: sqlalchemy.orm.Mapped[int] = mapped_column(
+    visibility: Mapped[int] = mapped_column(
+        default=100,
+        kw_only=True,
         server_default=sqlalchemy.text("100"),  # DEFAULT 100
     )
-    risk: sqlalchemy.orm.Mapped[int] = mapped_column(
+    risk: Mapped[int] = mapped_column(
+        default=0,
+        kw_only=True,
         server_default=sqlalchemy.text("0"),  # DEFAULT 0
     )
-    module: sqlalchemy.orm.Mapped[str]
-    data: sqlalchemy.orm.Mapped[str | None]
-    false_positive: sqlalchemy.orm.Mapped[int] = mapped_column(
+    module: Mapped[str]
+    data: Mapped[str | None]
+    false_positive: Mapped[int] = mapped_column(
+        default=0,
+        kw_only=True,
         server_default=sqlalchemy.text("0"),  # DEFAULT 0
     )
-    source_event_hash: sqlalchemy.orm.Mapped[str | None] = mapped_column(
+    source_event_hash: Mapped[str | None] = mapped_column(
+        default="ROOT",
+        kw_only=True,
         server_default=sqlalchemy.text("'ROOT'"),  # DEFAULT 'ROOT'
     )
