@@ -324,7 +324,7 @@ class SpiderFootDb:
         Path(database_path).parent.mkdir(exist_ok=True, parents=True)
 
         self._engine = sqlalchemy.ext.asyncio.create_async_engine(
-            f"sqlite:///{database_path}",
+            f"sqlite+aiosqlite:///{database_path}",
         )
         self._session_factory = async_sessionmaker(
             self._engine,
