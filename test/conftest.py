@@ -2,12 +2,6 @@ import pytest
 from spiderfoot import SpiderFootHelpers
 
 
-collect_ignore_glob = [
-    "integration",
-    "unit/modules/test_*.py",
-]
-
-
 @pytest.fixture(autouse=True)
 def default_options(request):
     request.cls.default_options = {
@@ -20,7 +14,7 @@ def default_options(request):
         '_internettlds': 'https://publicsuffix.org/list/effective_tld_names.dat',
         '_internettlds_cache': 72,
         '_genericusers': ",".join(SpiderFootHelpers.usernamesFromWordlists(['generic-usernames'])),
-        '__database': f"sqlite://{'/:memory:'}",  # note: test database file
+        '__database': ":memory:",  # note: test database file
         '__modules__': None,  # List of modules. Will be set after start-up.
         '__correlationrules__': None,  # List of correlation rules. Will be set after start-up.
         '_socks1type': '',
