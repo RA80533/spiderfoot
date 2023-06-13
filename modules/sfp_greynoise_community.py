@@ -94,6 +94,7 @@ class sfp_greynoise_community(SpiderFootPlugin):
         res = {}
         if qry_type == "ip":
             self.debug(f"Querying GreyNoise Community API for IP: {qry}")
+            ip_res = {}
             ip_response = self.sf.fetchUrl(
                 gn_community_url + qry,
                 timeout=self.opts["_fetchtimeout"],
