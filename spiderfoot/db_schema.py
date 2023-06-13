@@ -48,8 +48,6 @@ class TblConfig:
         return tbl_config_iter
 
 
-# TODO Change "tbl_event_types" to "tbl_event_type"
-# TODO Fix `event_raw` default
 @orm_registry.mapped_as_dataclass
 class TblEventType:
     __tablename__ = "tbl_event_types"
@@ -125,7 +123,6 @@ class TblScanConfig:
         return tbl_scan_config_iter
 
 
-# TODO Change "tbl_scan_correlation_results" to "tbl_scan_correlation_result"
 @orm_registry.mapped_as_dataclass
 class TblScanCorrelationResult:
     __tablename__ = "tbl_scan_correlation_results"
@@ -148,7 +145,6 @@ class TblScanCorrelationResult:
 
 _tbl_scan_correlation_results_events_rowid = 0
 
-# TODO Change "tbl_scan_correlation_results_events" to "tbl_scan_correlation_result_event"
 @orm_registry.mapped_as_dataclass
 class TblScanCorrelationResultEvent:
     __tablename__ = "tbl_scan_correlation_results_events"
@@ -173,7 +169,6 @@ class TblScanCorrelationResultEvent:
     )
 
 
-# TODO Change "tbl_scan_instances" to "tbl_scan_instance"
 @orm_registry.mapped_as_dataclass
 class TblScanInstance:
     __tablename__ = "tbl_scan_instances"
@@ -232,7 +227,6 @@ class TblScanLog:
 
 _tbl_scan_results_rowid = 0
 
-# TODO Change "tbl_scan_results" to "tbl_scan_result"
 @orm_registry.mapped_as_dataclass
 class TblScanResult:
     __tablename__ = "tbl_scan_results"
