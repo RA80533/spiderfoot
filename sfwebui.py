@@ -184,7 +184,7 @@ class SpiderFootWebUi:
         templ = mako.template.Template(filename='spiderfoot/templates/error.tmpl', lookup=self.lookup)
         return templ.render(message='Not Found', docroot=self.docroot, status=status, version=__version__)
 
-    def jsonify_error(self, status: str, message: str) -> dict:
+    def jsonify_error(self, status: str, message: str) -> dict[str, dict[str, str]]:
         """Jsonify error response.
 
         Args:
@@ -275,7 +275,7 @@ class SpiderFootWebUi:
     #
 
     @cherrypy.expose
-    def scanexportlogs(self, id: str, dialect: str = "excel") -> bytes:
+    def scanexportlogs(self, id: str, dialect: str = "excel") -> str:
         """Get scan log
 
         Args:
@@ -283,12 +283,12 @@ class SpiderFootWebUi:
             dialect (str): CSV dialect (default: excel)
 
         Returns:
-            bytes: scan logs in CSV format
+            str: scan logs in CSV format
         """
         dbh = SpiderFootDb(self.config)
 
         try:
-            data = dbh.scanLogs(id, None, None, True)
+            data = dbh.scanLogs(id, None, 0, True)
         except Exception:
             return self.error("Scan ID not found.")
 
@@ -310,7 +310,7 @@ class SpiderFootWebUi:
         cherrypy.response.headers['Content-Disposition'] = f"attachment; filename=SpiderFoot-{id}.log.csv"
         cherrypy.response.headers['Content-Type'] = "application/csv"
         cherrypy.response.headers['Pragma'] = "no-cache"
-        return fileobj.getvalue().encode('utf-8')
+        return fileobj.getvalue()
 
     @cherrypy.expose
     def scancorrelationsexport(self, id: str, filetype: str = "csv", dialect: str = "excel") -> str:
@@ -340,13 +340,13 @@ class SpiderFootWebUi:
         headings = ["Rule Name", "Correlation", "Risk", "Description"]
 
         if filetype.lower() in ["xlsx", "excel"]:
-            rows: list[tuple[str, str, str, str]] = []
+            rows: list[list[str]] = []
             for row in correlations:
                 correlation = row[1]
                 rule_name = row[2]
                 rule_risk = row[3]
                 rule_description = row[5]
-                rows.append((rule_name, correlation, rule_risk, rule_description))
+                rows.append([rule_name, correlation, rule_risk, rule_description])
 
             if scan_name:
                 fname = f"{scan_name}-SpiderFoot-correlations.xlxs"
@@ -368,7 +368,7 @@ class SpiderFootWebUi:
                 rule_name = row[2]
                 rule_risk = row[3]
                 rule_description = row[5]
-                parser.writerow((rule_name, correlation, rule_risk, rule_description))
+                parser.writerow([rule_name, correlation, rule_risk, rule_description])
 
             if scan_name:
                 fname = f"{scan_name}-SpiderFoot-correlations.csv"
@@ -397,39 +397,40 @@ class SpiderFootWebUi:
         """
         dbh = SpiderFootDb(self.config)
         data = dbh.scanResultEvent(id, type)
+        
+        headings = ["Updated", "Type", "Module", "Source", "F/P", "Data"]
 
         if filetype.lower() in ["xlsx", "excel"]:
-            rows = []
+            rows: list[list[str]] = []
             for row in data:
                 if row[4] == "ROOT":
                     continue
                 lastseen = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(row[0]))
                 datafield = str(row[1]).replace("<SFURL>", "").replace("</SFURL>", "")
-                rows.append([lastseen, str(row[4]), str(row[3]), str(row[2]), row[13], datafield])
+                rows.append([lastseen, str(row[4]), str(row[3]), str(row[2]), str(row[13]), datafield])
 
             fname = "SpiderFoot.xlsx"
             cherrypy.response.headers['Content-Disposition'] = f"attachment; filename={fname}"
             cherrypy.response.headers['Content-Type'] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             cherrypy.response.headers['Pragma'] = "no-cache"
-            return buildExcel(rows, ["Updated", "Type", "Module", "Source",
-                                   "F/P", "Data"], sheetNameIndex=1)
+            return buildExcel(rows, headings, sheetNameIndex=1)
 
         if filetype.lower() == 'csv':
             fileobj = io.StringIO()
             parser = csv.writer(fileobj, dialect=dialect)
-            parser.writerow(["Updated", "Type", "Module", "Source", "F/P", "Data"])
+            parser.writerow(headings)
             for row in data:
                 if row[4] == "ROOT":
                     continue
                 lastseen = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(row[0]))
                 datafield = str(row[1]).replace("<SFURL>", "").replace("</SFURL>", "")
-                parser.writerow([lastseen, str(row[4]), str(row[3]), str(row[2]), row[13], datafield])
+                parser.writerow([lastseen, str(row[4]), str(row[3]), str(row[2]), str(row[13]), datafield])
 
             fname = "SpiderFoot.csv"
             cherrypy.response.headers['Content-Disposition'] = f"attachment; filename={fname}"
             cherrypy.response.headers['Content-Type'] = "application/csv"
             cherrypy.response.headers['Pragma'] = "no-cache"
-            return fileobj.getvalue().encode('utf-8')
+            return fileobj.getvalue()
 
         return self.error("Invalid export filetype.")
 
@@ -460,6 +461,8 @@ class SpiderFootWebUi:
         if not data:
             return None
 
+        headings = ["Scan Name", "Updated", "Type", "Module", "Source", "F/P", "Data"]
+
         if filetype.lower() in ["xlsx", "excel"]:
             rows = []
             for row in data:
@@ -478,13 +481,12 @@ class SpiderFootWebUi:
             cherrypy.response.headers['Content-Disposition'] = f"attachment; filename={fname}"
             cherrypy.response.headers['Content-Type'] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             cherrypy.response.headers['Pragma'] = "no-cache"
-            return buildExcel(rows, ["Scan Name", "Updated", "Type", "Module",
-                                   "Source", "F/P", "Data"], sheetNameIndex=2)
+            return buildExcel(rows, headings, sheetNameIndex=2)
 
         if filetype.lower() == 'csv':
             fileobj = io.StringIO()
             parser = csv.writer(fileobj, dialect=dialect)
-            parser.writerow(["Scan Name", "Updated", "Type", "Module", "Source", "F/P", "Data"])
+            parser.writerow(headings)
             for row in data:
                 if row[4] == "ROOT":
                     continue
@@ -1831,7 +1833,7 @@ class SpiderFootWebUi:
 
 
 # 5 in sfwebui.py
-def buildExcel(data: list[tuple[str, str, str, str]], columnNames: list[str], sheetNameIndex: int = 0) -> str:
+def buildExcel(data: list[list[str]], columnNames: list[str], sheetNameIndex: int = 0) -> str:
     """Convert supplied raw data into GEXF (Graph Exchange XML Format) format (e.g. for Gephi).
     
     Args:
@@ -1847,8 +1849,7 @@ def buildExcel(data: list[tuple[str, str, str, str]], columnNames: list[str], sh
     defaultSheet = workbook.active
     columnNames.pop(sheetNameIndex)
     allowed_sheet_chars = string.ascii_uppercase + string.digits + '_'
-    for row_t in data:
-        row = list(row_t)
+    for row in data:
         sheetName = "".join([c for c in str(row.pop(sheetNameIndex)) if c.upper() in allowed_sheet_chars])
         try:
             sheet = workbook[sheetName]
