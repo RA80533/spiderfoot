@@ -1,4 +1,5 @@
 adblockparser>=0.7,<1
+dacite
 dnspython>=2.3.0,<3
 ExifRead>=2.3.2,<3
 CherryPy @ git+https://github.com/RA80533/cherrypy.git
