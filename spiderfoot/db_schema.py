@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 
 
-orm_registry = sqlalchemy.orm.registry()
+orm_registry: sqlalchemy.orm.registry = sqlalchemy.orm.registry()
 
 
 @orm_registry.mapped_as_dataclass
