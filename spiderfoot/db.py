@@ -361,12 +361,11 @@ class SpiderFootDb:
         stmt = sqlalchemy.select(TblEventType)
         try:
             with self._sync_session_factory.begin() as ctx:
-                tbl_event_type_iter_raw = ctx.scalars(stmt)
-        except sqlalchemy.exc.DatabaseError as e:
+                tbl_event_type_iter = ctx.scalars(stmt).all()
+        except sqlalchemy.exc.DBAPIError as e:
             raise IOError(
                 "SQL error encountered when retrieving event types",
             ) from e
-        tbl_event_type_iter = tbl_event_type_iter_raw.all()
         return tbl_event_type_iter
 
     def scanLogEvents(
