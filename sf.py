@@ -162,7 +162,7 @@ def main() -> None:
 
     # Initialize database handle
     try:
-        dbh = SpiderFootDb(sfConfig)
+        dbh = SpiderFootDb(sfConfig, init=True)
     except Exception as e:
         log.critical(f"Failed to initialize database: {e}", exc_info=True)
         sys.exit(-1)

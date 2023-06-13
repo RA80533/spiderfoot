@@ -1158,6 +1158,7 @@ class SpiderFootWebUi:
         return True
 
     @cherrypy.expose
+    @cherrypy.tools.json_out()
     def resultsetfp(self, id: str, resultids: str, fp: str) -> str:
         """Set a bunch of results (hashes) as false positive.
 
