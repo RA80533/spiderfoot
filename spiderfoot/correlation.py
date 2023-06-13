@@ -133,7 +133,7 @@ class SpiderFootCorrelator:
 
         self.types = self.dbh.eventTypes()
         for t in self.types:
-            self.type_entity_map[t[1]] = t[3]
+            self.type_entity_map[t.event_descr] = t.event_type
 
         self.rules = list()
         self.raw_ruleset = ruleset
