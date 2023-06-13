@@ -447,8 +447,8 @@ class SpiderFootWebUi:
             str: results in CSV or Excel format
         """
         dbh = SpiderFootDb(self.config)
-        scaninfo = dict()
-        data = list()
+        scaninfo = dict[str, tuple[str, str, int | None, int | None, int | None, str]]()
+        data = list[tuple[int, str | None, str | None, str, str, int, int, int, str, str, str, str, str, int, int]]()
         scan_name = ""
 
         for id in ids.split(','):
@@ -459,19 +459,19 @@ class SpiderFootWebUi:
             data = data + dbh.scanResultEvent(id)
 
         if not data:
-            return None
+            return None  # TODO Raise an exception
 
         headings = ["Scan Name", "Updated", "Type", "Module", "Source", "F/P", "Data"]
 
         if filetype.lower() in ["xlsx", "excel"]:
-            rows = []
+            rows: list[list[str]] = []
             for row in data:
                 if row[4] == "ROOT":
                     continue
                 lastseen = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(row[0]))
                 datafield = str(row[1]).replace("<SFURL>", "").replace("</SFURL>", "")
                 rows.append([scaninfo[row[12]][0], lastseen, str(row[4]), str(row[3]),
-                            str(row[2]), row[13], datafield])
+                            str(row[2]), str(row[13]), datafield])
 
             if len(ids.split(',')) > 1 or scan_name == "":
                 fname = "SpiderFoot.xlsx"
@@ -493,7 +493,7 @@ class SpiderFootWebUi:
                 lastseen = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(row[0]))
                 datafield = str(row[1]).replace("<SFURL>", "").replace("</SFURL>", "")
                 parser.writerow([scaninfo[row[12]][0], lastseen, str(row[4]), str(row[3]),
-                                str(row[2]), row[13], datafield])
+                                str(row[2]), str(row[13]), datafield])
 
             if len(ids.split(',')) > 1 or scan_name == "":
                 fname = "SpiderFoot.csv"
@@ -503,7 +503,7 @@ class SpiderFootWebUi:
             cherrypy.response.headers['Content-Disposition'] = f"attachment; filename={fname}"
             cherrypy.response.headers['Content-Type'] = "application/csv"
             cherrypy.response.headers['Pragma'] = "no-cache"
-            return fileobj.getvalue().encode('utf-8')
+            return fileobj.getvalue()
 
         return self.error("Invalid export filetype.")
 
@@ -526,8 +526,10 @@ class SpiderFootWebUi:
         if not data:
             return None
 
+        headings = ["Updated", "Type", "Module", "Source", "F/P", "Data"]
+
         if filetype.lower() in ["xlsx", "excel"]:
-            rows = []
+            rows: list[list[str]] = []
             for row in data:
                 if row[10] == "ROOT":
                     continue
@@ -536,13 +538,12 @@ class SpiderFootWebUi:
             cherrypy.response.headers['Content-Disposition'] = "attachment; filename=SpiderFoot.xlsx"
             cherrypy.response.headers['Content-Type'] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             cherrypy.response.headers['Pragma'] = "no-cache"
-            return buildExcel(rows, ["Updated", "Type", "Module", "Source",
-                                   "F/P", "Data"], sheetNameIndex=1)
+            return buildExcel(rows, headings, sheetNameIndex=1)
 
         if filetype.lower() == 'csv':
             fileobj = io.StringIO()
             parser = csv.writer(fileobj, dialect=dialect)
-            parser.writerow(["Updated", "Type", "Module", "Source", "F/P", "Data"])
+            parser.writerow(headings)
             for row in data:
                 if row[10] == "ROOT":
                     continue
@@ -551,7 +552,7 @@ class SpiderFootWebUi:
             cherrypy.response.headers['Content-Disposition'] = "attachment; filename=SpiderFoot.csv"
             cherrypy.response.headers['Content-Type'] = "application/csv"
             cherrypy.response.headers['Pragma'] = "no-cache"
-            return fileobj.getvalue().encode('utf-8')
+            return fileobj.getvalue()
 
         return self.error("Invalid export filetype.")
 
@@ -566,7 +567,7 @@ class SpiderFootWebUi:
             str: results in JSON format
         """
         dbh = SpiderFootDb(self.config)
-        scaninfo = list()
+        scaninfo = list[dict[str, str | int]]()
         scan_name = ""
 
         for id in ids.split(','):
@@ -607,7 +608,7 @@ class SpiderFootWebUi:
         cherrypy.response.headers['Content-Disposition'] = f"attachment; filename={fname}"
         cherrypy.response.headers['Content-Type'] = "application/json; charset=utf-8"
         cherrypy.response.headers['Pragma'] = "no-cache"
-        return json.dumps(scaninfo).encode('utf-8')
+        return json.dumps(scaninfo)
 
     @cherrypy.expose
     def scanviz(self, id: str, gexf: str = "0") -> str:
@@ -659,8 +660,8 @@ class SpiderFootWebUi:
             str: GEXF data
         """
         dbh = SpiderFootDb(self.config)
-        data = list()
-        roots = list()
+        data = list[tuple[int, str | None, str | None, str, str, int, int, int, str, str, str, str, str, int, int]]()
+        roots = list[str]()
         scan_name = ""
 
         if not ids:
