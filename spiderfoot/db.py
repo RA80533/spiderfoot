@@ -1610,7 +1610,7 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when getting child element IDs") from e
 
-    def scanElementSourcesAll(self, instanceId: str, childData: typing.List[typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int]]) -> typing.List[typing.Union[typing.Dict[str, typing.Union[typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int], typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int, str, str, str]]], typing.Dict[str, typing.List[str]]]]:
+    def scanElementSourcesAll(self, instanceId: str, childData: typing.List[typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int]]) -> typing.Tuple[typing.Dict[str, typing.Union[typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int], typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int, str, str, str]]], typing.Dict[str, typing.List[str]]]:
         """Get the full set of upstream IDs which are parents to the supplied set of IDs.
 
         Args:
@@ -1682,7 +1682,7 @@ class SpiderFootDb:
         assert row
 
         datamap[parentId] = row
-        return [datamap, pc]
+        return (datamap, pc)
 
     def scanElementChildrenAll(self, instanceId: str, parentIds: typing.List[str]) -> typing.List[str]:
         """Get the full set of downstream IDs which are children of the supplied set of IDs.

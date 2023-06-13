@@ -1815,13 +1815,13 @@ class SpiderFootWebUi:
         """
         dbh = SpiderFootDb(self.config)
         pc = dict()
-        datamap = dict()
+        datamap = dict[str, tuple[int, str | None, str | None, str, str, int, int, int, str, str, str, str, str, int, int] | tuple[int, str | None, str | None, str, str, int, int, int, str, str, str, str, str, int, int, str, str, str]]()
         retdata = dict()
 
         # Get the events we will be tracing back from
         try:
             leafSet = dbh.scanResultEvent(id, eventType)
-            [datamap, pc] = dbh.scanElementSourcesAll(id, leafSet)
+            (datamap, pc) = dbh.scanElementSourcesAll(id, leafSet)
         except Exception:
             return retdata
 

@@ -584,7 +584,7 @@ class TestSpiderFootDb(unittest.TestCase):
 
         self.assertEqual('TBD', 'TBD')
 
-    def test_scanElementSourcesAll_should_return_a_list(self):
+    def test_scanElementSourcesAll_should_return_a_tuple(self):
         """
         Test scanElementSourcesAll(self, instanceId, childData)
         """
@@ -593,7 +593,7 @@ class TestSpiderFootDb(unittest.TestCase):
         instance_id = "example instance id"
         child_data = ["example child", "example child"]
         scan_element_sources_all = sfdb.scanElementSourcesAll(instance_id, child_data)
-        self.assertIsInstance(scan_element_sources_all, list)
+        self.assertIsInstance(scan_element_sources_all, tuple)
 
         self.assertEqual('TBD', 'TBD')
 
