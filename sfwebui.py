@@ -1782,7 +1782,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def scanhistory(self, id: str) -> list:
+    def scanhistory(self, id: str) -> list[SpiderFootDb.ScanResultHistoryTuple] | object:
         """Historical data for a scan.
 
         Args:
@@ -1803,7 +1803,7 @@ class SpiderFootWebUi:
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def scanelementtypediscovery(self, id: str, eventType: str) -> dict:
+    def scanelementtypediscovery(self, id: str, eventType: str) -> object:
         """Scan element type discovery.
 
         Args:
@@ -1814,21 +1814,20 @@ class SpiderFootWebUi:
             dict
         """
         dbh = SpiderFootDb(self.config)
-        pc = dict()
-        datamap = dict[str, tuple[int, str | None, str | None, str, str, int, int, int, str, str, str, str, str, int, int] | tuple[int, str | None, str | None, str, str, int, int, int, str, str, str, str, str, int, int, str, str, str]]()
-        retdata = dict()
 
         # Get the events we will be tracing back from
         try:
             leafSet = dbh.scanResultEvent(id, eventType)
             (datamap, pc) = dbh.scanElementSourcesAll(id, leafSet)
         except Exception:
-            return retdata
+            return {}  # TODO Do something else here
 
         # Delete the ROOT key as it adds no value from a viz perspective
         del pc['ROOT']
-        retdata['tree'] = SpiderFootHelpers.dataParentChildToTree(pc)
-        retdata['data'] = datamap
+        retdata = {
+            'tree': SpiderFootHelpers.dataParentChildToTree(pc),
+            'data': datamap,
+        }
 
         return retdata
 
