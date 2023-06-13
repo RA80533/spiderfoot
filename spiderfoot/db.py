@@ -457,7 +457,9 @@ class SpiderFootDb:
                 raise IOError("SQL error encountered when vacuuming the database") from e
         return False
 
-    def search(self, criteria: typing.Dict[str, str], filterFp: bool = False) -> typing.List[typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, typing.Optional[str], str, str, str, int, int]]:
+    SearchTuple = typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, typing.Optional[str], str, str, str, int, int]
+
+    def search(self, criteria: typing.Dict[str, str], filterFp: bool = False) -> typing.List[SearchTuple]:
         """Search database.
 
         Args:
@@ -540,7 +542,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching search results") from e
 
-    def eventTypes(self) -> typing.Sequence[typing.Tuple[str, str, int, str]]:
+    EventTypeTuple = typing.Tuple[str, str, int, str]
+
+    def eventTypes(self) -> typing.Sequence[EventTypeTuple]:
         """Get event types.
 
         Returns:
@@ -729,7 +733,9 @@ class SpiderFootDb:
             except sqlite3.Error:
                 raise IOError("Unable to set information for the scan instance.") from None
 
-    def scanInstanceGet(self, instanceId: str) -> typing.Tuple[str, str, typing.Optional[int], typing.Optional[int], typing.Optional[int], str]:
+    ScanInstanceGetTuple = typing.Tuple[str, str, typing.Optional[int], typing.Optional[int], typing.Optional[int], str]
+
+    def scanInstanceGet(self, instanceId: str) -> ScanInstanceGetTuple:
         """Return info about a scan instance (name, target, created, started, ended, status)
 
         Args:
@@ -814,7 +820,11 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching result summary") from e
 
-    def scanCorrelationSummary(self, instanceId: str, by: str = "rule") -> typing.Union[typing.List[typing.Tuple[str, int]], typing.List[typing.Tuple[str, str, str, str, int]]]:
+    ScanCorrelationSummaryByRiskTuple = typing.Tuple[str, int]
+    
+    ScanCorrelationSummaryByRuleTuple = typing.Tuple[str, str, str, str, int]
+
+    def scanCorrelationSummary(self, instanceId: str, by: str = "rule") -> typing.Union[typing.List[ScanCorrelationSummaryByRiskTuple], typing.List[ScanCorrelationSummaryByRuleTuple]]:
         """Obtain a summary of the correlations, filtered by rule or risk
 
         Args:
@@ -861,7 +871,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching correlation summary") from e
 
-    def scanCorrelationList(self, instanceId: str) -> typing.List[typing.Tuple[str, str, str, str, str, str, str, int]]:
+    ScanCorrelationListTuple = typing.Tuple[str, str, str, str, str, str, str, int]
+
+    def scanCorrelationList(self, instanceId: str) -> typing.List[ScanCorrelationListTuple]:
         """Obtain a list of the correlations from a scan
 
         Args:
@@ -893,6 +905,8 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching correlation list") from e
 
+    ScanResultEventTuple = typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int]
+
     def scanResultEvent(
         self,
         instanceId: str,
@@ -902,7 +916,7 @@ class SpiderFootDb:
         sourceId: typing.Optional[typing.Union[str, typing.List[str]]] = None,
         correlationId: typing.Optional[str] = None,
         filterFp: bool = False
-    ) -> typing.List[typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int]]:
+    ) -> typing.List[ScanResultEventTuple]:
         """Obtain the data for a scan and event type.
 
         Args:
@@ -991,7 +1005,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching result events") from e
 
-    def scanResultEventUnique(self, instanceId: str, eventType: str = 'ALL', filterFp: bool = False) -> typing.List[typing.Tuple[typing.Optional[str], str, int]]:
+    ScanResultEventUniqueTuple = typing.Tuple[typing.Optional[str], str, int]
+
+    def scanResultEventUnique(self, instanceId: str, eventType: str = 'ALL', filterFp: bool = False) -> typing.List[ScanResultEventUniqueTuple]:
         """Obtain a unique list of elements.
 
         Args:
@@ -1033,7 +1049,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching unique result events") from e
 
-    def scanLogs(self, instanceId: str, limit: typing.Optional[int] = None, fromRowId: int = 0, reverse: bool = False) -> typing.List[typing.Tuple[int, typing.Optional[str], str, typing.Optional[str], int]]:
+    ScanLogTuple = typing.Tuple[int, typing.Optional[str], str, typing.Optional[str], int]
+
+    def scanLogs(self, instanceId: str, limit: typing.Optional[int] = None, fromRowId: int = 0, reverse: bool = False) -> typing.List[ScanLogTuple]:
         """Get scan logs.
 
         Args:
@@ -1079,7 +1097,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching scan logs") from e
 
-    def scanErrors(self, instanceId: str, limit: int = 0) -> typing.List[typing.Tuple[int, typing.Optional[str], typing.Optional[str]]]:
+    ScanErrorTuple = typing.Tuple[int, typing.Optional[str], typing.Optional[str]]
+
+    def scanErrors(self, instanceId: str, limit: int = 0) -> typing.List[ScanErrorTuple]:
         """Get scan errors.
 
         Args:
@@ -1450,7 +1470,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError(f"SQL error encountered when storing event data ({self.dbh})") from e
 
-    def scanInstanceList(self) -> typing.List[typing.Tuple[str, str, str, typing.Optional[int], typing.Optional[int], typing.Optional[int], str, int]]:
+    ScanInstanceListTuple = typing.Tuple[str, str, str, typing.Optional[int], typing.Optional[int], typing.Optional[int], str, int]
+
+    def scanInstanceList(self) -> typing.List[ScanInstanceListTuple]:
         """List all previously run scans.
 
         Returns:
@@ -1481,7 +1503,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when fetching scan list") from e
 
-    def scanResultHistory(self, instanceId: str) -> typing.List[typing.Tuple[typing.Optional[str], str, int]]:
+    ScanResultHistoryTuple = typing.Tuple[typing.Optional[str], str, int]
+
+    def scanResultHistory(self, instanceId: str) -> typing.List[ScanResultHistoryTuple]:
         """History of data from the scan.
 
         Args:
@@ -1510,7 +1534,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError(f"SQL error encountered when fetching history for scan {instanceId}") from e
 
-    def scanElementSourcesDirect(self, instanceId: str, elementIdList: typing.List[str]) -> typing.List[typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int, str, str, str]]:
+    ScanElementSourcesDirectTuple = typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int, str, str, str]
+
+    def scanElementSourcesDirect(self, instanceId: str, elementIdList: typing.List[str]) -> typing.List[ScanElementSourcesDirectTuple]:
         """Get the source IDs, types and data for a set of IDs.
 
         Args:
@@ -1561,7 +1587,9 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when getting source element IDs") from e
 
-    def scanElementChildrenDirect(self, instanceId: str, elementIdList: typing.List[str]) -> typing.List[typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int]]:
+    ScanElementChildrenDirectTuple = typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int]
+
+    def scanElementChildrenDirect(self, instanceId: str, elementIdList: typing.List[str]) -> typing.List[ScanElementChildrenDirectTuple]:
         """Get the child IDs, types and data for a set of IDs.
 
         Args:
@@ -1610,7 +1638,11 @@ class SpiderFootDb:
             except sqlite3.Error as e:
                 raise IOError("SQL error encountered when getting child element IDs") from e
 
-    def scanElementSourcesAll(self, instanceId: str, childData: typing.List[typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int]]) -> typing.Tuple[typing.Dict[str, typing.Union[typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int], typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int, str, str, str]]], typing.Dict[str, typing.List[str]]]:
+    ScanElementSourcesAll_datamap = typing.Dict[str, typing.Union[ScanResultEventTuple, ScanElementSourcesDirectTuple]]
+    
+    ScanElementSourcesAll_pc = typing.Dict[str, typing.List[str]]
+
+    def scanElementSourcesAll(self, instanceId: str, childData: typing.List[ScanResultEventTuple]) -> typing.Tuple[ScanElementSourcesAll_datamap, ScanElementSourcesAll_pc]:
         """Get the full set of upstream IDs which are parents to the supplied set of IDs.
 
         Args:
@@ -1637,7 +1669,7 @@ class SpiderFootDb:
         # Get the first round of source IDs for the leafs
         keepGoing = True
         nextIds: typing.List[str] = list()
-        datamap: typing.Dict[str, typing.Union[typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int], typing.Tuple[int, typing.Optional[str], typing.Optional[str], str, str, int, int, int, str, str, str, str, str, int, int, str, str, str]]] = dict()
+        datamap: typing.Dict[str, typing.Union[SpiderFootDb.ScanResultEventTuple, SpiderFootDb.ScanElementSourcesDirectTuple]] = dict()
         pc: typing.Dict[str, typing.List[str]] = dict()
 
         for row in childData:
