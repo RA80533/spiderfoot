@@ -56,7 +56,7 @@ class SpiderFootWebUi:
     lookup = mako.lookup.TemplateLookup(directories=[''])
 
     # 6 in sfwebui.py
-    defaultConfig: dict
+    defaultConfig: dict[str, ...]
 
     # 65 in sfwebui.py
     config: dict[str, ...]
@@ -77,7 +77,7 @@ class SpiderFootWebUi:
     #  1 in sf.py
     #  1 in sfwebui.py
     #  1 in test/integration/test_sfwebui.py
-    def __init__(self, web_config: dict, config: dict, loggingQueue: queue.Queue[logging.LogRecord] | None = None) -> None:
+    def __init__(self, web_config: dict[str, ...], config: dict[str, ...], loggingQueue: queue.Queue[logging.LogRecord] | None = None) -> None:
         """Initialize web server.
 
         Args:
@@ -340,13 +340,13 @@ class SpiderFootWebUi:
         headings = ["Rule Name", "Correlation", "Risk", "Description"]
 
         if filetype.lower() in ["xlsx", "excel"]:
-            rows = []
+            rows: list[tuple[str, str, str, str]] = []
             for row in correlations:
                 correlation = row[1]
                 rule_name = row[2]
                 rule_risk = row[3]
                 rule_description = row[5]
-                rows.append([rule_name, correlation, rule_risk, rule_description])
+                rows.append((rule_name, correlation, rule_risk, rule_description))
 
             if scan_name:
                 fname = f"{scan_name}-SpiderFoot-correlations.xlxs"
@@ -368,7 +368,7 @@ class SpiderFootWebUi:
                 rule_name = row[2]
                 rule_risk = row[3]
                 rule_description = row[5]
-                parser.writerow([rule_name, correlation, rule_risk, rule_description])
+                parser.writerow((rule_name, correlation, rule_risk, rule_description))
 
             if scan_name:
                 fname = f"{scan_name}-SpiderFoot-correlations.csv"
@@ -378,7 +378,7 @@ class SpiderFootWebUi:
             cherrypy.response.headers['Content-Disposition'] = f"attachment; filename={fname}"
             cherrypy.response.headers['Content-Type'] = "application/csv"
             cherrypy.response.headers['Pragma'] = "no-cache"
-            return fileobj.getvalue().encode('utf-8')
+            return fileobj.getvalue()
 
         return self.error("Invalid export filetype.")
 
@@ -1831,7 +1831,7 @@ class SpiderFootWebUi:
 
 
 # 5 in sfwebui.py
-def buildExcel(data: list, columnNames: list[str], sheetNameIndex: int = 0) -> str:
+def buildExcel(data: list[tuple[str, str, str, str]], columnNames: list[str], sheetNameIndex: int = 0) -> str:
     """Convert supplied raw data into GEXF (Graph Exchange XML Format) format (e.g. for Gephi).
     
     Args:
@@ -1847,7 +1847,8 @@ def buildExcel(data: list, columnNames: list[str], sheetNameIndex: int = 0) -> s
     defaultSheet = workbook.active
     columnNames.pop(sheetNameIndex)
     allowed_sheet_chars = string.ascii_uppercase + string.digits + '_'
-    for row in data:
+    for row_t in data:
+        row = list(row_t)
         sheetName = "".join([c for c in str(row.pop(sheetNameIndex)) if c.upper() in allowed_sheet_chars])
         try:
             sheet = workbook[sheetName]
@@ -1872,13 +1873,13 @@ def buildExcel(data: list, columnNames: list[str], sheetNameIndex: int = 0) -> s
         workbook.remove(defaultSheet)
     
     # Sort sheets alphabetically
-    workbook._sheets.sort(key=lambda ws: ws.title)
+    workbook._sheets.sort(key=itemgetter("title"))
     
     # Save workbook
     with io.BytesIO() as f:
         workbook.save(f)
         f.seek(0)
-        return f.read()
+        return f.read().decode()
 
 
 # 5 in sfwebui.py
