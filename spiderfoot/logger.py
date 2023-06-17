@@ -106,7 +106,7 @@ def logListenerSetup(loggingQueue, opts: dict = None) -> 'logging.handlers.Queue
     )
 
     # Filter by log level
-    console_handler.addFilter(lambda x: x.levelno >= logLevel)
+    # console_handler.addFilter(lambda x: x.levelno >= logLevel)
     debug_handler.addFilter(lambda x: x.levelno >= logging.DEBUG)
     error_handler.addFilter(lambda x: x.levelno >= logging.WARN)
 
