@@ -161,7 +161,7 @@ def main() -> None:
 
     # Initialize database handle
     try:
-        dbh = SpiderFootDb(sfConfig)
+        dbh = SpiderFootDb(sfConfig, init=True)
     except Exception as e:
         log.critical(f"Failed to initialize database: {e}", exc_info=True)
         sys.exit(-1)
@@ -205,7 +205,6 @@ def main() -> None:
         sys.exit(0)
 
     if args.types:
-        dbh = SpiderFootDb(sfConfig, init=True)
         log.info("Types available:")
         typedata = dbh.eventTypes()
         types = dict()
