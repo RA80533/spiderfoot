@@ -79,9 +79,9 @@ class SpiderFootWebUi:
         # 'config' supplied will be the defaults, let's supplement them
         # now with any configuration which may have previously been saved.
         self.defaultConfig = deepcopy(config)
-        dbh = SpiderFootDb(self.defaultConfig, init=True)
+        self.dbh = SpiderFootDb(self.defaultConfig, init=True)
         sf = SpiderFoot(self.defaultConfig)
-        self.config = sf.configUnserialize(dbh.configGet(), self.defaultConfig)
+        self.config = sf.configUnserialize(self.dbh.configGet(), self.defaultConfig)
 
         # Set up logging
         if loggingQueue is None:
@@ -252,7 +252,7 @@ class SpiderFootWebUi:
             value = "%"
             regex = ""
 
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         criteria = {
             'scan_id': id or '',
             'type': eventType or '',
@@ -339,7 +339,7 @@ class SpiderFootWebUi:
         Returns:
             bytes: scan logs in CSV format
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
 
         try:
             data = dbh.scanLogs(id, None, None, True)
@@ -378,7 +378,7 @@ class SpiderFootWebUi:
         Returns:
             str: results in CSV or Excel format
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
 
         try:
             scaninfo = dbh.scanInstanceGet(id)
@@ -449,7 +449,7 @@ class SpiderFootWebUi:
         Returns:
             str: results in CSV or Excel format
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         data = dbh.scanResultEvent(id, type)
 
         if filetype.lower() in ["xlsx", "excel"]:
@@ -499,7 +499,7 @@ class SpiderFootWebUi:
         Returns:
             str: results in CSV or Excel format
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         scaninfo = dict()
         data = list()
         scan_name = ""
@@ -617,7 +617,7 @@ class SpiderFootWebUi:
         Returns:
             str: results in JSON format
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         scaninfo = list()
         scan_name = ""
 
@@ -675,7 +675,7 @@ class SpiderFootWebUi:
         if not id:
             return None
 
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         data = dbh.scanResultEvent(id, filterFp=True)
         scan = dbh.scanInstanceGet(id)
 
@@ -710,7 +710,7 @@ class SpiderFootWebUi:
         Returns:
             str: GEXF data
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         data = list()
         roots = list()
         scan_name = ""
@@ -754,7 +754,7 @@ class SpiderFootWebUi:
         Returns:
             dict: scan options for the specified scan
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         ret = dict()
 
         meta = dbh.scanInstanceGet(id)
@@ -807,7 +807,7 @@ class SpiderFootWebUi:
         # Snapshot the current configuration to be used by the scan
         cfg = deepcopy(self.config)
         modlist = list()
-        dbh = SpiderFootDb(cfg)
+        dbh = self.dbh
         info = dbh.scanInstanceGet(id)
 
         if not info:
@@ -864,7 +864,7 @@ class SpiderFootWebUi:
         # Snapshot the current configuration to be used by the scan
         cfg = deepcopy(self.config)
         modlist = list()
-        dbh = SpiderFootDb(cfg)
+        dbh = self.dbh
 
         for id in ids.split(","):
             info = dbh.scanInstanceGet(id)
@@ -913,7 +913,7 @@ class SpiderFootWebUi:
         Returns:
             str: New scan page HTML
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         types = dbh.eventTypes()
         templ = Template(filename='spiderfoot/templates/newscan.tmpl', lookup=self.lookup)
         return templ.render(pageid='NEWSCAN', types=types, docroot=self.docroot,
@@ -930,7 +930,7 @@ class SpiderFootWebUi:
         Returns:
             str: New scan page HTML pre-populated with options from cloned scan.
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         types = dbh.eventTypes()
         info = dbh.scanInstanceGet(id)
 
@@ -978,7 +978,7 @@ class SpiderFootWebUi:
         Returns:
             str: scan info page HTML
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         res = dbh.scanInstanceGet(id)
         if res is None:
             return self.error("Scan ID not found.")
@@ -1068,7 +1068,7 @@ class SpiderFootWebUi:
         if not id:
             return self.jsonify_error('404', "No scan specified")
 
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         ids = id.split(',')
 
         for scan_id in ids:
@@ -1133,7 +1133,7 @@ class SpiderFootWebUi:
 
         # Save settings
         try:
-            dbh = SpiderFootDb(self.config)
+            dbh = self.dbh
             useropts = json.loads(allopts)
             cleanopts = dict()
             for opt in list(useropts.keys()):
@@ -1175,7 +1175,7 @@ class SpiderFootWebUi:
 
         # Save settings
         try:
-            dbh = SpiderFootDb(self.config)
+            dbh = self.dbh
             useropts = json.loads(allopts)
             cleanopts = dict()
             for opt in list(useropts.keys()):
@@ -1200,7 +1200,7 @@ class SpiderFootWebUi:
             bool: success
         """
         try:
-            dbh = SpiderFootDb(self.config)
+            dbh = self.dbh
             dbh.configClear()  # Clear it in the DB
             self.config = deepcopy(self.defaultConfig)  # Clear in memory
         except Exception:
@@ -1222,7 +1222,7 @@ class SpiderFootWebUi:
         """
         cherrypy.response.headers['Content-Type'] = "application/json; charset=utf-8"
 
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
 
         if fp not in ["0", "1"]:
             return json.dumps(["ERROR", "No FP flag set or not set correctly."]).encode('utf-8')
@@ -1274,7 +1274,7 @@ class SpiderFootWebUi:
         """
         cherrypy.response.headers['Content-Type'] = "application/json; charset=utf-8"
 
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         types = dbh.eventTypes()
         ret = list()
 
@@ -1355,7 +1355,7 @@ class SpiderFootWebUi:
         Returns:
             str: query results as JSON
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
 
         if not query:
             return self.jsonify_error('400', "Invalid query.")
@@ -1421,7 +1421,7 @@ class SpiderFootWebUi:
             return self.error("Invalid target type. Could not recognize it as a target SpiderFoot supports.")
 
         # Swap the globalscantable for the database handler
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
 
         # Snapshot the current configuration to be used by the scan
         cfg = deepcopy(self.config)
@@ -1518,7 +1518,7 @@ class SpiderFootWebUi:
         if not id:
             return self.jsonify_error('404', "No scan specified")
 
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         ids = id.split(',')
 
         for scan_id in ids:
@@ -1545,7 +1545,7 @@ class SpiderFootWebUi:
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def vacuum(self):
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         try:
             if dbh.vacuumDB():
                 return json.dumps(["SUCCESS", ""]).encode('utf-8')
@@ -1571,7 +1571,7 @@ class SpiderFootWebUi:
         Returns:
             list: scan log
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         retdata = []
 
         try:
@@ -1597,7 +1597,7 @@ class SpiderFootWebUi:
         Returns:
             list: scan errors
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         retdata = []
 
         try:
@@ -1619,7 +1619,7 @@ class SpiderFootWebUi:
         Returns:
             list: scan list
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         data = dbh.scanInstanceList()
         retdata = []
 
@@ -1661,7 +1661,7 @@ class SpiderFootWebUi:
         Returns:
             list: scan status
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         data = dbh.scanInstanceGet(id)
 
         if not data:
@@ -1697,7 +1697,7 @@ class SpiderFootWebUi:
         """
         retdata = []
 
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
 
         try:
             scandata = dbh.scanResultSummary(id, by)
@@ -1730,7 +1730,7 @@ class SpiderFootWebUi:
         """
         retdata = []
 
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
 
         try:
             corrdata = dbh.scanCorrelationList(id)
@@ -1758,7 +1758,7 @@ class SpiderFootWebUi:
         """
         retdata = []
 
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
 
         if not eventType:
             eventType = 'ALL'
@@ -1799,7 +1799,7 @@ class SpiderFootWebUi:
         Returns:
             list: unique search results
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         retdata = []
 
         try:
@@ -1845,7 +1845,7 @@ class SpiderFootWebUi:
         if not id:
             return self.jsonify_error('404', "No scan specified")
 
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
 
         try:
             return dbh.scanResultHistory(id)
@@ -1864,7 +1864,7 @@ class SpiderFootWebUi:
         Returns:
             dict
         """
-        dbh = SpiderFootDb(self.config)
+        dbh = self.dbh
         pc = dict()
         datamap = dict()
         retdata = dict()
