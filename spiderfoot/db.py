@@ -471,7 +471,7 @@ class SpiderFootDb:
 
         try:
             with self._session_factory.begin() as ctx:
-                return list(ctx.scalars(sqlalchemy.text(qry), qvars).all())
+                return list(ctx.execute(sqlalchemy.text(qry), qvars).tuples().all())
         except sqlalchemy.exc.DBAPIError as e:
             raise IOError("SQL error encountered when fetching search results") from e
 
@@ -488,7 +488,7 @@ class SpiderFootDb:
         qry = "SELECT event_descr, event, event_raw, event_type FROM tbl_event_types"
         try:
             with self._session_factory.begin() as ctx:
-                return list(ctx.scalars(sqlalchemy.text(qry)).all())
+                return list(ctx.execute(sqlalchemy.text(qry)).tuples().all())
         except sqlalchemy.exc.DBAPIError as e:
             raise IOError("SQL error encountered when retrieving event types") from e
 
@@ -725,7 +725,7 @@ class SpiderFootDb:
 
         try:
             with self._session_factory.begin() as ctx:
-                return list(ctx.scalars(sqlalchemy.text(qry), qvars).all())
+                return list(ctx.execute(sqlalchemy.text(qry), qvars).tuples().all())
         except sqlalchemy.exc.DBAPIError as e:
             raise IOError("SQL error encountered when fetching result summary") from e
 
@@ -771,7 +771,7 @@ class SpiderFootDb:
 
         try:
             with self._session_factory.begin() as ctx:
-                return list(ctx.scalars(sqlalchemy.text(qry), qvars).all())
+                return list(ctx.execute(sqlalchemy.text(qry), qvars).tuples().all())
         except sqlalchemy.exc.DBAPIError as e:
             raise IOError("SQL error encountered when fetching correlation summary") from e
 
@@ -802,7 +802,7 @@ class SpiderFootDb:
 
         try:
             with self._session_factory.begin() as ctx:
-                return list(ctx.scalars(sqlalchemy.text(qry), qvars).all())
+                return list(ctx.execute(sqlalchemy.text(qry), qvars).tuples().all())
         except sqlalchemy.exc.DBAPIError as e:
             raise IOError("SQL error encountered when fetching correlation list") from e
 
@@ -903,7 +903,7 @@ class SpiderFootDb:
 
         try:
             with self._session_factory.begin() as ctx:
-                return list(ctx.scalars(sqlalchemy.text(qry), qvars).all())
+                return list(ctx.execute(sqlalchemy.text(qry), qvars).tuples().all())
         except sqlalchemy.exc.DBAPIError as e:
             raise IOError("SQL error encountered when fetching result events") from e
 
@@ -944,7 +944,7 @@ class SpiderFootDb:
 
         try:
             with self._session_factory.begin() as ctx:
-                return list(ctx.scalars(sqlalchemy.text(qry), qvars).all())
+                return list(ctx.execute(sqlalchemy.text(qry), qvars).tuples().all())
         except sqlalchemy.exc.DBAPIError as e:
             raise IOError("SQL error encountered when fetching unique result events") from e
 
@@ -989,7 +989,7 @@ class SpiderFootDb:
 
         try:
             with self._session_factory.begin() as ctx:
-                return list(ctx.scalars(sqlalchemy.text(qry), qvars).all())
+                return list(ctx.execute(sqlalchemy.text(qry), qvars).tuples().all())
         except sqlalchemy.exc.DBAPIError as e:
             raise IOError("SQL error encountered when fetching scan logs") from e
 
@@ -1025,7 +1025,7 @@ class SpiderFootDb:
 
         try:
             with self._session_factory.begin() as ctx:
-                return list(ctx.scalars(sqlalchemy.text(qry), qvars).all())
+                return list(ctx.execute(sqlalchemy.text(qry), qvars).tuples().all())
         except sqlalchemy.exc.DBAPIError as e:
             raise IOError("SQL error encountered when fetching scan errors") from e
 
@@ -1220,7 +1220,7 @@ class SpiderFootDb:
 
         try:
             with self._session_factory.begin() as ctx:
-                for [component, opt, val] in ctx.scalars(sqlalchemy.text(qry), qvars).all():
+                for [component, opt, val] in ctx.execute(sqlalchemy.text(qry), qvars).tuples().all():
                     if component == "GLOBAL":
                         retval[opt] = val
                     else:
@@ -1353,7 +1353,7 @@ class SpiderFootDb:
 
         try:
             with self._session_factory.begin() as ctx:
-                return list(ctx.scalars(sqlalchemy.text(qry)).all())
+                return list(ctx.execute(sqlalchemy.text(qry)).tuples().all())
         except sqlalchemy.exc.DBAPIError as e:
             raise IOError("SQL error encountered when fetching scan list") from e
 
@@ -1381,7 +1381,7 @@ class SpiderFootDb:
 
         try:
             with self._session_factory.begin() as ctx:
-                return list(ctx.scalars(sqlalchemy.text(qry), qvars).all())
+                return list(ctx.execute(sqlalchemy.text(qry), qvars).tuples().all())
         except sqlalchemy.exc.DBAPIError as e:
             raise IOError(f"SQL error encountered when fetching history for scan {instanceId}") from e
 
@@ -1431,7 +1431,7 @@ class SpiderFootDb:
 
         try:
             with self._session_factory.begin() as ctx:
-                return list(ctx.scalars(sqlalchemy.text(qry), qvars).all())
+                return list(ctx.execute(sqlalchemy.text(qry), qvars).tuples().all())
         except sqlalchemy.exc.DBAPIError as e:
             raise IOError("SQL error encountered when getting source element IDs") from e
 
@@ -1479,7 +1479,7 @@ class SpiderFootDb:
 
         try:
             with self._session_factory.begin() as ctx:
-                return list(ctx.scalars(sqlalchemy.text(qry), qvars).all())
+                return list(ctx.execute(sqlalchemy.text(qry), qvars).tuples().all())
         except sqlalchemy.exc.DBAPIError as e:
             raise IOError("SQL error encountered when getting child element IDs") from e
 
