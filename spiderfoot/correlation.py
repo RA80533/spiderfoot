@@ -73,7 +73,7 @@ class SpiderFootCorrelator:
 
         self.types = self.dbh.eventTypes()
         for t in self.types:
-            self.type_entity_map[t[1]] = t[3]
+            self.type_entity_map[t[0]] = t[3]
 
         self.rules = list()
 
@@ -172,8 +172,8 @@ class SpiderFootCorrelator:
 
                 for r in regexps:
                     for t in self.types:
-                        if re.search(r, t[1]):
-                            criterias['eventType'].append(t[1])
+                        if re.search(r, t[0]):
+                            criterias['eventType'].append(t[0])
 
             if matchrule['method'] == 'exact':
                 if type(matchrule['value']) != list:
@@ -184,9 +184,9 @@ class SpiderFootCorrelator:
                 for m in matches:
                     matched = False
                     for t in self.types:
-                        if t[1] == m:
+                        if t[0] == m:
                             matched = True
-                            criterias['eventType'].append(t[1])
+                            criterias['eventType'].append(t[0])
                     if not matched:
                         self.log.error(f"Invalid type specified: {m}")
                         return None
